@@ -8,6 +8,7 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
   <script src="https://unpkg.com/element-plus"></script>
+  <script src="js/auth.js"></script>
   <style>
     :root {
       --primary: #667eea;
@@ -34,13 +35,33 @@
     #app {
       max-width: 1060px;
       margin: 0 auto;
-      padding: 20px 24px 40px;
+      padding: 16px 24px 40px;
+    }
+
+    /* Auth bar */
+    .auth-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 0.84rem;
+      color: #606266;
+    }
+    .auth-bar .user-info {
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(6px);
+      padding: 4px 12px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     /* Header */
     .page-header {
       text-align: center;
-      padding: 24px 0 8px;
+      padding: 8px 0;
     }
     .page-header h1 {
       font-size: 1.9rem;
@@ -93,7 +114,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
-    /* Category color mapping */
+    /* Category colors */
     .cat-study { border-left-color: var(--cat-study) !important; }
     .cat-班团会 { border-left-color: var(--cat-meeting) !important; }
     .cat-党团 { border-left-color: var(--cat-party) !important; }
@@ -112,7 +133,7 @@
     .cat-tag.cat-党团 { background: #fef0f0; color: #f56c6c; }
     .cat-tag.cat-其他 { background: #f0f9eb; color: #67c23a; }
 
-    /* Card base */
+    /* Task card */
     .task-card {
       background: rgba(255,255,255,0.88);
       backdrop-filter: blur(10px);
@@ -148,6 +169,17 @@
       flex-wrap: wrap;
     }
     .task-card .task-actions { flex-shrink: 0; }
+    .completer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.75rem;
+      color: #67C23A;
+      font-weight: 600;
+      background: #f0f9eb;
+      padding: 2px 8px;
+      border-radius: 8px;
+    }
 
     /* Kanban */
     .kanban-grid {
@@ -326,7 +358,6 @@
       border-radius: 12px;
       padding: 14px 18px;
       margin: 10px 0;
-      animation: shimmer 1.5s ease-in-out infinite;
     }
     .skeleton .sk-line {
       height: 14px;
@@ -342,6 +373,11 @@
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
+
+    /* Login modal */
+    .login-modal .el-dialog { border-radius: 20px; }
+    .login-modal .el-tabs__nav { width: 100%; display: flex; }
+    .login-modal .el-tabs__item { flex: 1; text-align: center; font-weight: 600; }
 
     /* Back link */
     .back-link {
@@ -367,11 +403,27 @@
       .cal-table td { height: 56px; padding: 2px; }
       .cal-task { font-size: 0.6rem; }
       .page-header h1 { font-size: 1.5rem; }
+      .auth-bar { justify-content: center; }
     }
   </style>
 </head>
 <body>
   <div id="app">
+    <!-- Auth bar -->
+    <div class="auth-bar" v-if="!authLoading">
+      <template v-if="AuthState.user">
+        <span class="user-info">
+          👤 {{ AuthState.user.email }}
+          <el-tag v-if="AuthState.isAdmin" size="small" type="warning">管理员</el-tag>
+        </span>
+        <el-button size="small" text @click="doLogout">退出</el-button>
+      </template>
+      <template v-else>
+        <el-button size="small" type="primary" plain @click="openLogin">🔑 登录</el-button>
+      </template>
+    </div>
+
+    <!-- Page header -->
     <div class="page-header">
       <h1>📌 DDL 任务列表</h1>
       <div class="stats" v-if="tasks.length">
@@ -381,6 +433,7 @@
       </div>
     </div>
 
+    <!-- View switch -->
     <div class="view-switch">
       <el-radio-group v-model="view" size="default">
         <el-radio-button label="list">📋 列表</el-radio-button>
@@ -390,8 +443,51 @@
       </el-radio-group>
     </div>
 
+    <!-- Login/Register modal -->
+    <el-dialog v-model="showLogin" title="" width="400px" :close-on-click-modal="false" class="login-modal" center>
+      <div style="text-align:center;margin-bottom:8px;">
+        <span style="font-size:2rem;">🔐</span>
+        <h3 style="margin:4px 0;font-weight:800;">{{ authTab === 'login' ? '用户登录' : '注册账号' }}</h3>
+      </div>
+      <el-tabs v-model="authTab" stretch>
+        <el-tab-pane label="登录" name="login">
+          <el-input v-model="loginEmail" placeholder="邮箱地址" size="large" style="margin-bottom:12px;" clearable
+            :prefix-icon="null">
+            <template #prepend>📧</template>
+          </el-input>
+          <el-input v-model="loginPwd" placeholder="密码" show-password size="large"
+            @keyup.enter="doLogin" style="margin-bottom:4px;">
+            <template #prepend>🔒</template>
+          </el-input>
+          <el-button type="primary" @click="doLogin" :loading="authBusy" size="large" style="width:100%;margin-top:16px;border-radius:10px;">
+            登 录
+          </el-button>
+          <p v-if="authError" style="color:#F56C6C;font-size:0.82rem;margin-top:8px;text-align:center;">{{ authError }}</p>
+        </el-tab-pane>
+        <el-tab-pane label="注册" name="register">
+          <el-input v-model="regEmail" placeholder="邮箱地址" size="large" style="margin-bottom:12px;" clearable>
+            <template #prepend>📧</template>
+          </el-input>
+          <el-input v-model="regName" placeholder="姓名（可选）" size="large" style="margin-bottom:12px;" clearable>
+            <template #prepend>👤</template>
+          </el-input>
+          <el-input v-model="regPwd" placeholder="密码（至少6位）" show-password size="large"
+            @keyup.enter="doRegister" style="margin-bottom:4px;">
+            <template #prepend>🔒</template>
+          </el-input>
+          <el-button type="success" @click="doRegister" :loading="authBusy" size="large" style="width:100%;margin-top:16px;border-radius:10px;">
+            注 册
+          </el-button>
+          <p v-if="authError" style="color:#F56C6C;font-size:0.82rem;margin-top:8px;text-align:center;">{{ authError }}</p>
+          <p v-if="regSuccess" style="color:#67C23A;font-size:0.82rem;margin-top:8px;text-align:center;">
+            ✅ 注册成功！请登录（如需验证邮箱请查看收件箱）
+          </p>
+        </el-tab-pane>
+      </el-tabs>
+    </el-dialog>
+
     <!-- Loading skeleton -->
-    <div v-if="loading">
+    <div v-if="taskLoading">
       <div class="skeleton" v-for="i in 4" :key="i">
         <div class="sk-line"></div>
         <div class="sk-line"></div>
@@ -404,13 +500,13 @@
       <p>暂无任务，去管理后台添加吧</p>
     </div>
 
-    <!-- List view -->
-    <div v-if="view==='list' && !loading">
+    <!-- ===== LIST VIEW ===== -->
+    <div v-if="view==='list' && !taskLoading">
       <div v-for="task in tasks" :key="task.id"
            class="task-card"
            :class="['cat-'+task.category, { completed: task.completed }]">
         <div class="task-body">
-          <div style="display:flex;align-items:center;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <span class="task-title">{{ task.title }}</span>
             <span class="cat-tag" :class="'cat-'+task.category">{{ task.category }}</span>
           </div>
@@ -418,18 +514,24 @@
             <span>📅 {{ task.deadline ? new Date(task.deadline).toLocaleDateString('zh-CN') : '暂无截止' }}</span>
             <span>👤 {{ task.assignee || '未分配' }}</span>
             <span v-if="task.notes" style="color:#b0b5c0;">💬 {{ task.notes }}</span>
+            <span v-if="task.completed && task.completed_by_email" class="completer-badge">
+              ✅ {{ task.completed_by_email }}
+            </span>
           </div>
         </div>
         <div class="task-actions">
-          <el-button size="small" @click="markComplete(task)" :type="task.completed ? 'info' : 'success'" round>
-            {{ task.completed ? '✓ 已完成' : '标记完成' }}
+          <el-button v-if="!task.completed" size="small" type="success" round @click="markComplete(task)">
+            标记完成
+          </el-button>
+          <el-button v-else size="small" type="info" round @click="markComplete(task)">
+            撤销完成
           </el-button>
         </div>
       </div>
     </div>
 
-    <!-- Board view -->
-    <div v-if="view==='board' && !loading" class="kanban-grid">
+    <!-- ===== BOARD VIEW ===== -->
+    <div v-if="view==='board' && !taskLoading" class="kanban-grid">
       <div v-for="cat in categories" :key="cat" class="kanban-col">
         <h3>
           {{ cat === '学习' ? '📖' : cat === '班团会' ? '🏫' : cat === '党团' ? '🏛' : '📦' }}
@@ -443,12 +545,15 @@
             📅 {{ task.deadline ? new Date(task.deadline).toLocaleDateString('zh-CN') : '-' }}
             <span v-if="task.assignee" style="margin-left:6px;">👤 {{ task.assignee }}</span>
           </div>
+          <div v-if="task.completed && task.completed_by_email" class="completer-badge" style="margin-top:4px;font-size:0.7rem;">
+            ✅ {{ task.completed_by_email }}
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Timeline view -->
-    <div v-if="view==='timeline' && !loading" class="timeline-wrap">
+    <!-- ===== TIMELINE VIEW ===== -->
+    <div v-if="view==='timeline' && !taskLoading" class="timeline-wrap">
       <div class="timeline-line"></div>
       <div v-for="task in timelineTasks" :key="task.id" class="timeline-item">
         <div class="timeline-dot"
@@ -464,18 +569,21 @@
           </div>
           <div class="tl-meta">
             <span>📅 {{ task.deadline ? new Date(task.deadline).toLocaleDateString('zh-CN') : '无截止' }}</span>
-            <span style="margin-left:8px;">👤 {{ task.assignee || '-' }}</span>
+            <span v-if="task.assignee" style="margin-left:8px;">👤 {{ task.assignee }}</span>
             <span style="margin-left:8px;"
                   :class="['tl-relative', relativeClass(task.deadline, task.completed)]">
               {{ relativeTime(task.deadline) }}
+            </span>
+            <span v-if="task.completed && task.completed_by_email" class="completer-badge" style="margin-left:8px;">
+              ✅ {{ task.completed_by_email }}
             </span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Calendar view -->
-    <div v-if="view==='calendar' && !loading">
+    <!-- ===== CALENDAR VIEW ===== -->
+    <div v-if="view==='calendar' && !taskLoading">
       <div class="cal-header">
         <el-button size="small" circle @click="changeMonth(-1)">◀</el-button>
         <h3>{{ currentMonthYear }}</h3>
@@ -489,13 +597,13 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in calendarRows" :key="row[0] !== null ? row[0] : 'empty-'+Math.random()">
-            <td v-for="day in row" :key="day !== null ? day : 'null-'+Math.random()"
+          <tr v-for="(row, ri) in calendarRows" :key="ri">
+            <td v-for="(day, di) in row" :key="ri+'-'+di"
                 :class="{ today: isTodayCell(day) }">
               <div class="cal-day-num" v-if="day">{{ day }}</div>
               <div v-for="task in getTasksForDay(day)" :key="task.id"
                    class="cal-task" :class="{ completed: task.completed }"
-                   :title="task.title + ' - ' + (task.assignee || '')">
+                   :title="task.title + (task.completed_by_email ? ' - 已完成: '+task.completed_by_email : '')">
                 {{ task.title }}
               </div>
             </td>
@@ -508,45 +616,134 @@
   </div>
 
   <script>
-    const { createApp, ref, computed, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted, watch } = Vue;
     const app = createApp({
       setup() {
-        const supabase = window.supabase.createClient(
-          'https://brqrrzvrgtvuqjnragfp.supabase.co',
-          'sb_publishable_G3JtNib7OmJktuVgxLCAlw_m8aQYudO'
-        );
+        const sb = window.SB;
+
+        // ---- Auth state (local refs mirroring global AuthState) ----
+        const showLogin = ref(false);
+        const authTab = ref('login');
+        const authBusy = ref(false);
+        const authError = ref('');
+        const authLoading = ref(true);
+        const loginEmail = ref('');
+        const loginPwd = ref('');
+        const regEmail = ref('');
+        const regName = ref('');
+        const regPwd = ref('');
+        const regSuccess = ref(false);
+
+        const openLogin = () => {
+          authError.value = '';
+          regSuccess.value = false;
+          authTab.value = 'login';
+          showLogin.value = true;
+        };
+
+        const doLogin = async () => {
+          if (!loginEmail.value || !loginPwd.value) {
+            authError.value = '请输入邮箱和密码';
+            return;
+          }
+          authBusy.value = true;
+          authError.value = '';
+          const { error } = await AuthActions.login(loginEmail.value, loginPwd.value);
+          if (error) {
+            authError.value = error.message === 'Invalid login credentials'
+              ? '邮箱或密码错误' : (error.message || '登录失败');
+          } else {
+            showLogin.value = false;
+            loginEmail.value = '';
+            loginPwd.value = '';
+            ElementPlus.ElMessage.success('登录成功！');
+          }
+          authBusy.value = false;
+        };
+
+        const doRegister = async () => {
+          if (!regEmail.value || !regPwd.value) {
+            authError.value = '请输入邮箱和密码';
+            return;
+          }
+          if (regPwd.value.length < 6) {
+            authError.value = '密码至少需要6位';
+            return;
+          }
+          authBusy.value = true;
+          authError.value = '';
+          regSuccess.value = false;
+          const { data, error } = await AuthActions.register(regEmail.value, regPwd.value, regName.value);
+          if (error) {
+            authError.value = error.message === 'User already registered'
+              ? '该邮箱已注册' : (error.message || '注册失败');
+          } else {
+            regSuccess.value = true;
+            authError.value = '';
+            regEmail.value = '';
+            regName.value = '';
+            regPwd.value = '';
+            if (data.user?.identities?.length === 0) {
+              authError.value = '该邮箱已注册，请直接登录';
+              regSuccess.value = false;
+            }
+          }
+          authBusy.value = false;
+        };
+
+        const doLogout = async () => {
+          await AuthActions.logout();
+          ElementPlus.ElMessage.success('已退出登录');
+        };
+
+        // ---- Task state ----
         const view = ref('list');
         const tasks = ref([]);
-        const loading = ref(true);
+        const taskLoading = ref(true);
         const categories = ['学习','班团会','党团','其他'];
         const currentMonth = ref(new Date());
 
         const completedCount = computed(() => tasks.value.filter(t => t.completed).length);
 
         const fetchTasks = async () => {
-          loading.value = true;
+          taskLoading.value = true;
           try {
-            const { data, error } = await supabase.from('tasks').select('*').order('deadline',{ascending:true});
+            const { data, error } = await sb.from('tasks').select('*').order('deadline',{ascending:true});
             if (error) { ElementPlus.ElMessage.error('加载任务失败'); return; }
             if (data) tasks.value = data;
           } catch (e) {
             ElementPlus.ElMessage.error('网络错误，请刷新重试');
           } finally {
-            loading.value = false;
+            taskLoading.value = false;
           }
         };
 
         const markComplete = async (task) => {
+          if (!AuthState.user) {
+            showLogin.value = true;
+            ElementPlus.ElMessage.warning('请先登录后再操作');
+            return;
+          }
           try {
-            const { error } = await supabase.from('tasks').update({ completed: !task.completed }).eq('id', task.id);
-            if (error) { ElementPlus.ElMessage.error('操作失败'); return; }
-            ElementPlus.ElMessage.success(task.completed ? '已标记为未完成' : '已完成！');
-            fetchTasks();
+            const { data, error } = await AuthActions.markTaskComplete(task.id);
+            if (error) {
+              ElementPlus.ElMessage.error('操作失败: ' + error.message);
+              return;
+            }
+            if (data?.error) {
+              ElementPlus.ElMessage.error(data.error);
+              return;
+            }
+            if (data?.success) {
+              ElementPlus.ElMessage.success(data.action === 'completed' ? '已完成！' : '已撤销完成');
+              fetchTasks();
+            }
           } catch (e) {
             ElementPlus.ElMessage.error('网络错误');
           }
         };
 
+        // ---- Timeline ----
         const timelineTasks = computed(() =>
           [...tasks.value].sort((a,b) =>
             (a.deadline ? new Date(a.deadline) : Infinity) - (b.deadline ? new Date(b.deadline) : Infinity)
@@ -580,7 +777,7 @@
           return 'normal';
         };
 
-        // Calendar logic
+        // ---- Calendar ----
         const currentMonthYear = computed(() =>
           `${currentMonth.value.getFullYear()}年 ${currentMonth.value.getMonth()+1}月`
         );
@@ -628,13 +825,25 @@
           currentMonth.value = d;
         };
 
-        onMounted(fetchTasks);
+        // ---- Init ----
+        onMounted(async () => {
+          await AuthState.init();
+          authLoading.value = false;
+          fetchTasks();
+        });
+
         return {
-          view, tasks, loading, categories, completedCount,
-          markComplete, timelineTasks, isOverdue, isToday,
-          relativeTime, relativeClass,
-          currentMonth, currentMonthYear, calendarRows,
-          getTasksForDay, isTodayCell, changeMonth
+          // Auth
+          AuthState, showLogin, authTab, authBusy, authError, authLoading,
+          loginEmail, loginPwd, regEmail, regName, regPwd, regSuccess,
+          openLogin, doLogin, doRegister, doLogout,
+          // Tasks
+          view, tasks, taskLoading, categories, completedCount,
+          markComplete,
+          // Timeline
+          timelineTasks, isOverdue, isToday, relativeTime, relativeClass,
+          // Calendar
+          currentMonth, currentMonthYear, calendarRows, getTasksForDay, isTodayCell, changeMonth
         };
       }
     });
