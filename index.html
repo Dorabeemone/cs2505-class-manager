@@ -36,7 +36,6 @@
       position: relative;
     }
 
-    /* Animated floating orbs */
     .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
     .orb {
       position: absolute;
@@ -87,9 +86,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .header {
-      margin-bottom: 36px;
-    }
+    .header { margin-bottom: 36px; }
 
     .logo-icon {
       display: inline-block;
@@ -155,9 +152,7 @@
       transition: transform 0.4s ease;
     }
 
-    .nav-card:hover::before {
-      transform: scaleX(1);
-    }
+    .nav-card:hover::before { transform: scaleX(1); }
 
     .nav-card:hover {
       transform: translateY(-6px);
@@ -171,8 +166,7 @@
     }
 
     .nav-icon-wrap {
-      width: 64px;
-      height: 64px;
+      width: 64px; height: 64px;
       border-radius: 18px;
       display: flex;
       align-items: center;
@@ -226,22 +220,11 @@
       50% { opacity: 0.3; }
     }
 
-    /* Card entrance stagger */
     .nav-card:nth-child(1) { animation: fadeInUp 0.6s ease-out 0.1s both; }
     .nav-card:nth-child(2) { animation: fadeInUp 0.6s ease-out 0.2s both; }
     .nav-card:nth-child(3) { animation: fadeInUp 0.6s ease-out 0.3s both; }
     .nav-card:nth-child(4) { animation: fadeInUp 0.6s ease-out 0.4s both; }
 
-    /* Responsive */
-    @media (max-width: 480px) {
-      h1 { font-size: 1.8rem; }
-      .nav-grid { gap: 12px; }
-      .nav-card { padding: 20px 10px 18px; border-radius: 18px; }
-      .nav-icon-wrap { width: 48px; height: 48px; font-size: 24px; border-radius: 14px; }
-      .nav-label { font-size: 0.95rem; }
-      .nav-desc { font-size: 0.7rem; }
-      .orb { display: none; }
-    }
     /* Auth bar */
     .auth-bar-wrap {
       position: fixed;
@@ -264,6 +247,17 @@
       gap: 6px;
       color: #2c3e50;
     }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.8rem; }
+      .nav-grid { gap: 12px; }
+      .nav-card { padding: 20px 10px 18px; border-radius: 18px; }
+      .nav-icon-wrap { width: 48px; height: 48px; font-size: 24px; border-radius: 14px; }
+      .nav-label { font-size: 0.95rem; }
+      .nav-desc { font-size: 0.7rem; }
+      .orb { display: none; }
+      .auth-bar-wrap { justify-content: center; padding: 8px 12px; }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -278,18 +272,65 @@
     <div class="orb"></div>
   </div>
 
-  <!-- Auth bar -->
-  <div id="auth-widget" class="auth-bar-wrap">
-    <template v-if="!loading">
-      <span v-if="AuthState.user" class="user-info">
-        👤 {{ AuthState.user.email }}
-        <el-tag v-if="AuthState.isAdmin" size="small" type="warning">管理员</el-tag>
-      </span>
-      <el-button v-if="AuthState.user" size="small" text @click="doLogout">退出</el-button>
-      <a v-else href="ddl.html" style="text-decoration:none;">
-        <el-button size="small" type="primary" plain round>🔑 登录</el-button>
-      </a>
-    </template>
+  <div id="auth-widget">
+    <!-- Auth bar -->
+    <div class="auth-bar-wrap" v-if="!loading">
+      <template v-if="AuthState.user">
+        <span class="user-info">
+          👤 {{ AuthState.user.email }}
+          <el-tag v-if="AuthState.isAdmin" size="small" type="warning">管理员</el-tag>
+        </span>
+        <el-button size="small" text @click="doLogout">退出</el-button>
+      </template>
+      <template v-else>
+        <el-button size="small" type="primary" plain round @click="openLogin">🔑 登录</el-button>
+      </template>
+    </div>
+
+    <!-- Login / Register modal -->
+    <el-dialog v-model="showLogin" width="400px" :close-on-click-modal="false" center
+      :destroy-on-close="true">
+      <div style="text-align:center;margin-bottom:8px;">
+        <span style="font-size:2rem;">🔐</span>
+        <h3 style="margin:4px 0;font-weight:800;">{{ authTab === 'login' ? '用户登录' : '注册账号' }}</h3>
+      </div>
+      <el-tabs v-model="authTab" stretch>
+        <el-tab-pane label="登录" name="login">
+          <el-input v-model="loginEmail" placeholder="邮箱地址" size="large" style="margin-bottom:12px;" clearable>
+            <template #prepend>📧</template>
+          </el-input>
+          <el-input v-model="loginPwd" placeholder="密码" show-password size="large"
+            @keyup.enter="doLogin">
+            <template #prepend>🔒</template>
+          </el-input>
+          <el-button type="primary" @click="doLogin" :loading="authBusy" size="large"
+            style="width:100%;margin-top:16px;border-radius:10px;">
+            登 录
+          </el-button>
+          <p v-if="authError" style="color:#F56C6C;font-size:0.82rem;margin-top:8px;text-align:center;">{{ authError }}</p>
+        </el-tab-pane>
+        <el-tab-pane label="注册" name="register">
+          <el-input v-model="regEmail" placeholder="邮箱地址" size="large" style="margin-bottom:12px;" clearable>
+            <template #prepend>📧</template>
+          </el-input>
+          <el-input v-model="regName" placeholder="姓名（可选）" size="large" style="margin-bottom:12px;" clearable>
+            <template #prepend>👤</template>
+          </el-input>
+          <el-input v-model="regPwd" placeholder="密码（至少6位）" show-password size="large"
+            @keyup.enter="doRegister">
+            <template #prepend>🔒</template>
+          </el-input>
+          <el-button type="success" @click="doRegister" :loading="authBusy" size="large"
+            style="width:100%;margin-top:16px;border-radius:10px;">
+            注 册
+          </el-button>
+          <p v-if="authError" style="color:#F56C6C;font-size:0.82rem;margin-top:8px;text-align:center;">{{ authError }}</p>
+          <p v-if="regSuccess" style="color:#67C23A;font-size:0.82rem;margin-top:8px;text-align:center;">
+            ✅ 注册成功！请切换到"登录"标签进行登录。
+          </p>
+        </el-tab-pane>
+      </el-tabs>
+    </el-dialog>
   </div>
 
   <div class="container">
@@ -332,14 +373,91 @@
     createApp({
       setup() {
         const loading = ref(true);
+
+        // ---- Auth UI ----
+        const showLogin = ref(false);
+        const authTab = ref('login');
+        const authBusy = ref(false);
+        const authError = ref('');
+        const loginEmail = ref('');
+        const loginPwd = ref('');
+        const regEmail = ref('');
+        const regName = ref('');
+        const regPwd = ref('');
+        const regSuccess = ref(false);
+
+        const openLogin = () => {
+          authError.value = '';
+          regSuccess.value = false;
+          authTab.value = 'login';
+          showLogin.value = true;
+        };
+
+        const doLogin = async () => {
+          if (!loginEmail.value || !loginPwd.value) {
+            authError.value = '请输入邮箱和密码';
+            return;
+          }
+          authBusy.value = true;
+          authError.value = '';
+          const { error } = await AuthActions.login(loginEmail.value, loginPwd.value);
+          if (error) {
+            authError.value = error.message === 'Invalid login credentials'
+              ? '邮箱或密码错误' : (error.message || '登录失败');
+          } else {
+            showLogin.value = false;
+            loginEmail.value = '';
+            loginPwd.value = '';
+            ElementPlus.ElMessage.success('登录成功！');
+          }
+          authBusy.value = false;
+        };
+
+        const doRegister = async () => {
+          if (!regEmail.value || !regPwd.value) {
+            authError.value = '请输入邮箱和密码';
+            return;
+          }
+          if (regPwd.value.length < 6) {
+            authError.value = '密码至少需要6位';
+            return;
+          }
+          authBusy.value = true;
+          authError.value = '';
+          regSuccess.value = false;
+          const { data, error } = await AuthActions.register(regEmail.value, regPwd.value, regName.value);
+          if (error) {
+            authError.value = error.message === 'User already registered'
+              ? '该邮箱已注册，请直接登录' : (error.message || '注册失败');
+          } else {
+            if (data.user?.identities?.length === 0) {
+              authError.value = '该邮箱已注册，请直接登录';
+            } else {
+              regSuccess.value = true;
+              regEmail.value = '';
+              regName.value = '';
+              regPwd.value = '';
+            }
+          }
+          authBusy.value = false;
+        };
+
         const doLogout = async () => {
           await AuthActions.logout();
+          ElementPlus.ElMessage.success('已退出登录');
         };
+
         onMounted(async () => {
           await AuthState.init();
           loading.value = false;
         });
-        return { AuthState, loading, doLogout };
+
+        return {
+          AuthState, loading,
+          showLogin, authTab, authBusy, authError,
+          loginEmail, loginPwd, regEmail, regName, regPwd, regSuccess,
+          openLogin, doLogin, doRegister, doLogout
+        };
       }
     }).use(ElementPlus).mount('#auth-widget');
   </script>
