@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS2505 班级主页</title>
+  <style>
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a6fd6;
+      --secondary: #764ba2;
+      --accent-1: #f093fb;
+      --accent-2: #4facfe;
+      --bg-start: #e8ecf4;
+      --bg-mid: #dce2f0;
+      --bg-end: #c8d6e5;
+      --card-bg: rgba(255,255,255,0.88);
+      --text: #2c3e50;
+      --text-muted: #7f8c8d;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+      --shadow-md: 0 8px 32px rgba(0,0,0,0.06);
+      --shadow-lg: 0 16px 48px rgba(0,0,0,0.1);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-mid) 40%, var(--bg-end) 100%);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated floating orbs */
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.3;
+      animation: float 12s ease-in-out infinite;
+    }
+    .orb:nth-child(1) {
+      width: 300px; height: 300px;
+      background: var(--accent-2);
+      top: -80px; left: -60px;
+      animation-delay: 0s;
+    }
+    .orb:nth-child(2) {
+      width: 250px; height: 250px;
+      background: var(--accent-1);
+      bottom: -60px; right: -50px;
+      animation-delay: -4s;
+    }
+    .orb:nth-child(3) {
+      width: 180px; height: 180px;
+      background: var(--primary);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation-delay: -8s;
+      opacity: 0.2;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -25px) scale(1.08); }
+      50% { transform: translate(-15px, 20px) scale(0.94); }
+      75% { transform: translate(-25px, -15px) scale(1.04); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 90%;
+      max-width: 640px;
+      text-align: center;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .header {
+      margin-bottom: 36px;
+    }
+
+    .logo-icon {
+      display: inline-block;
+      font-size: 52px;
+      margin-bottom: 8px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 6px;
+      letter-spacing: 1px;
+    }
+
+    .nav-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .nav-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      padding: 28px 16px 24px;
+      text-decoration: none;
+      color: var(--text);
+      box-shadow: var(--shadow-md);
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.6);
+    }
+
+    .nav-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent-1));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+
+    .nav-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .nav-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(102, 126, 234, 0.25);
+    }
+
+    .nav-card:active {
+      transform: translateY(-2px);
+      transition: all 0.1s ease;
+    }
+
+    .nav-icon-wrap {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      font-size: 32px;
+      transition: all 0.3s ease;
+    }
+
+    .nav-card:nth-child(1) .nav-icon-wrap { background: linear-gradient(135deg, #e0f2fe, #bae6fd); }
+    .nav-card:nth-child(2) .nav-icon-wrap { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+    .nav-card:nth-child(3) .nav-icon-wrap { background: linear-gradient(135deg, #ede9fe, #c4b5fd); }
+    .nav-card:nth-child(4) .nav-icon-wrap { background: linear-gradient(135deg, #fce7f3, #f9a8d4); }
+
+    .nav-label {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .footer-note {
+      margin-top: 28px;
+      padding: 10px 20px;
+      display: inline-block;
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(8px);
+      border-radius: 20px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      animation: fadeInUp 0.8s ease-out 0.3s both;
+    }
+
+    .footer-note .dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #67C23A;
+      margin-right: 6px;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Card entrance stagger */
+    .nav-card:nth-child(1) { animation: fadeInUp 0.6s ease-out 0.1s both; }
+    .nav-card:nth-child(2) { animation: fadeInUp 0.6s ease-out 0.2s both; }
+    .nav-card:nth-child(3) { animation: fadeInUp 0.6s ease-out 0.3s both; }
+    .nav-card:nth-child(4) { animation: fadeInUp 0.6s ease-out 0.4s both; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      h1 { font-size: 1.8rem; }
+      .nav-grid { gap: 12px; }
+      .nav-card { padding: 20px 10px 18px; border-radius: 18px; }
+      .nav-icon-wrap { width: 48px; height: 48px; font-size: 24px; border-radius: 14px; }
+      .nav-label { font-size: 0.95rem; }
+      .nav-desc { font-size: 0.7rem; }
+      .orb { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo-icon">📋</div>
+      <h1>CS2505 班级主页</h1>
+      <p class="subtitle">信息汇聚 · 高效协作</p>
+    </div>
+
+    <div class="nav-grid">
+      <a href="ddl.html" class="nav-card">
+        <div class="nav-icon-wrap">📌</div>
+        <span class="nav-label">DDL 任务</span>
+        <span class="nav-desc">追踪班级任务进度</span>
+      </a>
+      <a href="recruit.html" class="nav-card">
+        <div class="nav-icon-wrap">📢</div>
+        <span class="nav-label">信息库</span>
+        <span class="nav-desc">招募与活动信息</span>
+      </a>
+      <a href="announce.html" class="nav-card">
+        <div class="nav-icon-wrap">📰</div>
+        <span class="nav-label">班级公示</span>
+        <span class="nav-desc">活动记录与推文</span>
+      </a>
+      <a href="admin.html" class="nav-card">
+        <div class="nav-icon-wrap">⚙️</div>
+        <span class="nav-label">管理后台</span>
+        <span class="nav-desc">内容发布与管理</span>
+      </a>
+    </div>
+
+    <div class="footer-note">
+      <span class="dot"></span>管理后台需密码验证 · 其他页面可自由访问
+    </div>
+  </div>
+</body>
+</html>

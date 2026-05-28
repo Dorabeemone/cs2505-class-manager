@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>DDL 任务 - CS2505</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <script src="https://unpkg.com/element-plus"></script>
+  <style>
+    :root {
+      --primary: #667eea;
+      --primary-light: #e8ecff;
+      --success: #67C23A;
+      --warning: #E6A23C;
+      --danger: #F56C6C;
+      --info: #909399;
+      --cat-study: #667eea;
+      --cat-meeting: #e6a23c;
+      --cat-party: #f56c6c;
+      --cat-other: #67c23a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(160deg, #e8ecf4 0%, #dce2f0 30%, #c8d6e5 60%, #e2e8f0 100%);
+      min-height: 100vh;
+      background-attachment: fixed;
+    }
+
+    #app {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+    }
+
+    /* Header */
+    .page-header {
+      text-align: center;
+      padding: 24px 0 8px;
+    }
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 1px;
+    }
+    .page-header .stats {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 6px;
+      font-size: 0.88rem;
+      color: #7f8c8d;
+    }
+    .page-header .stats span {
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(8px);
+      padding: 4px 14px;
+      border-radius: 12px;
+    }
+
+    /* View switch */
+    .view-switch {
+      display: flex;
+      justify-content: center;
+      margin: 16px 0 24px;
+    }
+    .view-switch .el-radio-group {
+      background: rgba(255,255,255,0.65);
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+      padding: 4px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    .view-switch .el-radio-button__inner {
+      border-radius: 11px !important;
+      border: none !important;
+      background: transparent;
+      padding: 8px 20px;
+      font-weight: 600;
+      transition: all 0.25s ease;
+    }
+    .view-switch .el-radio-button__original-radio:checked + .el-radio-button__inner {
+      background: white !important;
+      color: var(--primary) !important;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    /* Category color mapping */
+    .cat-study { border-left-color: var(--cat-study) !important; }
+    .cat-班团会 { border-left-color: var(--cat-meeting) !important; }
+    .cat-党团 { border-left-color: var(--cat-party) !important; }
+    .cat-其他 { border-left-color: var(--cat-other) !important; }
+
+    .cat-tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .cat-tag.cat-study { background: #e8ecff; color: #667eea; }
+    .cat-tag.cat-班团会 { background: #fef3e2; color: #e6a23c; }
+    .cat-tag.cat-党团 { background: #fef0f0; color: #f56c6c; }
+    .cat-tag.cat-其他 { background: #f0f9eb; color: #67c23a; }
+
+    /* Card base */
+    .task-card {
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin: 10px 0;
+      border-left: 4px solid var(--primary);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .task-card:hover {
+      transform: translateX(4px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    }
+    .task-card.completed {
+      opacity: 0.55;
+    }
+    .task-card.completed .task-title {
+      text-decoration: line-through;
+    }
+    .task-card .task-body { flex: 1; min-width: 0; }
+    .task-card .task-title { font-weight: 700; font-size: 0.98rem; }
+    .task-card .task-meta {
+      font-size: 0.8rem;
+      color: #909399;
+      margin-top: 4px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .task-card .task-actions { flex-shrink: 0; }
+
+    /* Kanban */
+    .kanban-grid {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+    }
+    .kanban-col {
+      min-width: 220px;
+      flex: 1;
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(8px);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .kanban-col h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .kanban-col h3 .count {
+      font-size: 0.75rem;
+      color: #909399;
+      font-weight: 500;
+      margin-left: auto;
+    }
+    .kanban-item {
+      background: white;
+      padding: 10px 12px;
+      margin: 8px 0;
+      border-radius: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+      font-size: 0.88rem;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+    .kanban-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .kanban-item.completed { opacity: 0.45; text-decoration: line-through; }
+    .kanban-col:nth-child(1) .kanban-item { border-left-color: var(--cat-study); }
+    .kanban-col:nth-child(2) .kanban-item { border-left-color: var(--cat-meeting); }
+    .kanban-col:nth-child(3) .kanban-item { border-left-color: var(--cat-party); }
+    .kanban-col:nth-child(4) .kanban-item { border-left-color: var(--cat-other); }
+
+    /* Timeline */
+    .timeline-wrap {
+      position: relative;
+      padding-left: 34px;
+    }
+    .timeline-line {
+      position: absolute;
+      left: 14px;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      background: linear-gradient(to bottom, var(--primary), var(--secondary));
+      border-radius: 2px;
+      opacity: 0.3;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -28px;
+      top: 10px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: 3px solid white;
+      box-shadow: 0 0 0 2px var(--primary-light);
+      transition: all 0.3s ease;
+      z-index: 1;
+    }
+    .timeline-dot.overdue { background: var(--danger); box-shadow: 0 0 0 2px #fef0f0; }
+    .timeline-dot.today { background: var(--warning); box-shadow: 0 0 0 2px #fef3e2; animation: pulse-dot 1.5s ease-in-out infinite; }
+    .timeline-dot.completed { background: var(--success); box-shadow: 0 0 0 2px #f0f9eb; }
+
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 0 2px #fef3e2; }
+      50% { box-shadow: 0 0 0 8px rgba(230, 162, 60, 0.1); }
+    }
+
+    .timeline-card {
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(10px);
+      padding: 12px 16px;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+      transition: all 0.2s ease;
+    }
+    .timeline-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); transform: translateX(3px); }
+    .timeline-card.completed { opacity: 0.55; }
+    .timeline-card.completed strong { text-decoration: line-through; }
+    .timeline-card .tl-title { font-weight: 700; }
+    .timeline-card .tl-meta { font-size: 0.8rem; color: #909399; margin-top: 4px; }
+    .tl-relative { font-weight: 600; }
+    .tl-relative.urgent { color: var(--danger); }
+    .tl-relative.warning { color: var(--warning); }
+    .tl-relative.normal { color: var(--primary); }
+
+    /* Calendar */
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .cal-header h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #2c3e50;
+      min-width: 140px;
+      text-align: center;
+    }
+    .cal-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 4px;
+    }
+    .cal-table th {
+      padding: 8px 0;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #909399;
+      text-transform: uppercase;
+    }
+    .cal-table td {
+      background: rgba(255,255,255,0.75);
+      border-radius: 10px;
+      padding: 6px;
+      vertical-align: top;
+      height: 80px;
+      width: 14.28%;
+      transition: all 0.2s ease;
+    }
+    .cal-table td:hover { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .cal-table td.today {
+      background: var(--primary-light);
+      box-shadow: inset 0 0 0 2px var(--primary);
+    }
+    .cal-day-num { font-weight: 700; font-size: 0.82rem; text-align: center; margin-bottom: 2px; }
+    .cal-task {
+      font-size: 0.68rem;
+      background: white;
+      margin: 2px 0;
+      padding: 2px 5px;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-left: 2px solid var(--primary);
+      cursor: default;
+    }
+    .cal-task.completed { opacity: 0.4; text-decoration: line-through; }
+
+    /* Empty & Loading */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #909399;
+    }
+    .empty-state .empty-icon { font-size: 56px; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.95rem; }
+
+    .skeleton {
+      background: rgba(255,255,255,0.7);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin: 10px 0;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+    .skeleton .sk-line {
+      height: 14px;
+      background: linear-gradient(90deg, #e8ecf4 25%, #dce2f0 50%, #e8ecf4 75%);
+      background-size: 200% 100%;
+      border-radius: 6px;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+    .skeleton .sk-line:first-child { width: 60%; margin-bottom: 8px; }
+    .skeleton .sk-line:last-child { width: 35%; height: 10px; }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Back link */
+    .back-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 32px;
+      color: #7f8c8d;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--primary); }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .task-card { flex-direction: column; align-items: flex-start; }
+      .task-card .task-actions { align-self: flex-end; }
+      .kanban-grid { flex-direction: column; }
+      .kanban-col { min-width: 100%; }
+      .cal-table td { height: 56px; padding: 2px; }
+      .cal-task { font-size: 0.6rem; }
+      .page-header h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="page-header">
+      <h1>📌 DDL 任务列表</h1>
+      <div class="stats" v-if="tasks.length">
+        <span>📋 共 {{ tasks.length }} 项</span>
+        <span>✅ 已完成 {{ completedCount }}</span>
+        <span>⏳ 待完成 {{ tasks.length - completedCount }}</span>
+      </div>
+    </div>
+
+    <div class="view-switch">
+      <el-radio-group v-model="view" size="default">
+        <el-radio-button label="list">📋 列表</el-radio-button>
+        <el-radio-button label="board">📊 看板</el-radio-button>
+        <el-radio-button label="timeline">🕐 时间线</el-radio-button>
+        <el-radio-button label="calendar">📅 日历</el-radio-button>
+      </el-radio-group>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div v-if="loading">
+      <div class="skeleton" v-for="i in 4" :key="i">
+        <div class="sk-line"></div>
+        <div class="sk-line"></div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div v-else-if="tasks.length === 0" class="empty-state">
+      <div class="empty-icon">📭</div>
+      <p>暂无任务，去管理后台添加吧</p>
+    </div>
+
+    <!-- List view -->
+    <div v-if="view==='list' && !loading">
+      <div v-for="task in tasks" :key="task.id"
+           class="task-card"
+           :class="['cat-'+task.category, { completed: task.completed }]">
+        <div class="task-body">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="task-title">{{ task.title }}</span>
+            <span class="cat-tag" :class="'cat-'+task.category">{{ task.category }}</span>
+          </div>
+          <div class="task-meta">
+            <span>📅 {{ task.deadline ? new Date(task.deadline).toLocaleDateString('zh-CN') : '暂无截止' }}</span>
+            <span>👤 {{ task.assignee || '未分配' }}</span>
+            <span v-if="task.notes" style="color:#b0b5c0;">💬 {{ task.notes }}</span>
+          </div>
+        </div>
+        <div class="task-actions">
+          <el-button size="small" @click="markComplete(task)" :type="task.completed ? 'info' : 'success'" round>
+            {{ task.completed ? '✓ 已完成' : '标记完成' }}
+          </el-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Board view -->
+    <div v-if="view==='board' && !loading" class="kanban-grid">
+      <div v-for="cat in categories" :key="cat" class="kanban-col">
+        <h3>
+          {{ cat === '学习' ? '📖' : cat === '班团会' ? '🏫' : cat === '党团' ? '🏛' : '📦' }}
+          {{ cat }}
+          <span class="count">{{ tasks.filter(t=>t.category===cat).length }}</span>
+        </h3>
+        <div v-if="tasks.filter(t=>t.category===cat).length === 0" style="color:#c0c4cc;font-size:0.82rem;text-align:center;padding:20px 0;">暂无任务</div>
+        <div v-for="task in tasks.filter(t=>t.category===cat)" :key="task.id" class="kanban-item" :class="{ completed: task.completed }">
+          <div style="font-weight:600;">{{ task.title }}</div>
+          <div style="font-size:0.76rem;color:#909399;margin-top:4px;">
+            📅 {{ task.deadline ? new Date(task.deadline).toLocaleDateString('zh-CN') : '-' }}
+            <span v-if="task.assignee" style="margin-left:6px;">👤 {{ task.assignee }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline view -->
+    <div v-if="view==='timeline' && !loading" class="timeline-wrap">
+      <div class="timeline-line"></div>
+      <div v-for="task in timelineTasks" :key="task.id" class="timeline-item">
+        <div class="timeline-dot"
+             :class="{
+               overdue: isOverdue(task.deadline) && !task.completed,
+               today: isToday(task.deadline) && !task.completed,
+               completed: task.completed
+             }"></div>
+        <div class="timeline-card" :class="{ completed: task.completed }">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="tl-title">{{ task.title }}</span>
+            <span class="cat-tag" :class="'cat-'+task.category">{{ task.category }}</span>
+          </div>
+          <div class="tl-meta">
+            <span>📅 {{ task.deadline ? new Date(task.deadline).toLocaleDateString('zh-CN') : '无截止' }}</span>
+            <span style="margin-left:8px;">👤 {{ task.assignee || '-' }}</span>
+            <span style="margin-left:8px;"
+                  :class="['tl-relative', relativeClass(task.deadline, task.completed)]">
+              {{ relativeTime(task.deadline) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar view -->
+    <div v-if="view==='calendar' && !loading">
+      <div class="cal-header">
+        <el-button size="small" circle @click="changeMonth(-1)">◀</el-button>
+        <h3>{{ currentMonthYear }}</h3>
+        <el-button size="small" circle @click="changeMonth(1)">▶</el-button>
+        <el-button size="small" @click="currentMonth = new Date()" style="margin-left:4px;">今天</el-button>
+      </div>
+      <table class="cal-table">
+        <thead>
+          <tr>
+            <th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in calendarRows" :key="row[0] !== null ? row[0] : 'empty-'+Math.random()">
+            <td v-for="day in row" :key="day !== null ? day : 'null-'+Math.random()"
+                :class="{ today: isTodayCell(day) }">
+              <div class="cal-day-num" v-if="day">{{ day }}</div>
+              <div v-for="task in getTasksForDay(day)" :key="task.id"
+                   class="cal-task" :class="{ completed: task.completed }"
+                   :title="task.title + ' - ' + (task.assignee || '')">
+                {{ task.title }}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <a href="index.html" class="back-link">← 返回主页</a>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+    const app = createApp({
+      setup() {
+        const supabase = window.supabase.createClient(
+          'https://brqrrzvrgtvuqjnragfp.supabase.co',
+          'sb_publishable_G3JtNib7OmJktuVgxLCAlw_m8aQYudO'
+        );
+        const view = ref('list');
+        const tasks = ref([]);
+        const loading = ref(true);
+        const categories = ['学习','班团会','党团','其他'];
+        const currentMonth = ref(new Date());
+
+        const completedCount = computed(() => tasks.value.filter(t => t.completed).length);
+
+        const fetchTasks = async () => {
+          loading.value = true;
+          try {
+            const { data, error } = await supabase.from('tasks').select('*').order('deadline',{ascending:true});
+            if (error) { ElementPlus.ElMessage.error('加载任务失败'); return; }
+            if (data) tasks.value = data;
+          } catch (e) {
+            ElementPlus.ElMessage.error('网络错误，请刷新重试');
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const markComplete = async (task) => {
+          try {
+            const { error } = await supabase.from('tasks').update({ completed: !task.completed }).eq('id', task.id);
+            if (error) { ElementPlus.ElMessage.error('操作失败'); return; }
+            ElementPlus.ElMessage.success(task.completed ? '已标记为未完成' : '已完成！');
+            fetchTasks();
+          } catch (e) {
+            ElementPlus.ElMessage.error('网络错误');
+          }
+        };
+
+        const timelineTasks = computed(() =>
+          [...tasks.value].sort((a,b) =>
+            (a.deadline ? new Date(a.deadline) : Infinity) - (b.deadline ? new Date(b.deadline) : Infinity)
+          )
+        );
+
+        const isOverdue = (deadline) => deadline && new Date(deadline) < new Date();
+        const isToday = (deadline) => {
+          if (!deadline) return false;
+          const d = new Date(deadline);
+          const t = new Date();
+          return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate();
+        };
+
+        const relativeTime = (deadline) => {
+          if (!deadline) return '无截止日期';
+          const diff = new Date(deadline) - new Date();
+          const days = Math.ceil(diff / 86400000);
+          if (days < 0) return `已过期 ${Math.abs(days)} 天`;
+          if (days === 0) return '今天截止';
+          return `剩余 ${days} 天`;
+        };
+
+        const relativeClass = (deadline, completed) => {
+          if (completed) return '';
+          if (!deadline) return '';
+          const diff = new Date(deadline) - new Date();
+          const days = Math.ceil(diff / 86400000);
+          if (days < 0) return 'urgent';
+          if (days <= 2) return 'warning';
+          return 'normal';
+        };
+
+        // Calendar logic
+        const currentMonthYear = computed(() =>
+          `${currentMonth.value.getFullYear()}年 ${currentMonth.value.getMonth()+1}月`
+        );
+
+        const calendarRows = computed(() => {
+          const y = currentMonth.value.getFullYear();
+          const m = currentMonth.value.getMonth();
+          const firstDay = new Date(y, m, 1).getDay();
+          const daysInMonth = new Date(y, m+1, 0).getDate();
+          let rows = [], week = [];
+          for (let i = 0; i < firstDay; i++) week.push(null);
+          for (let d = 1; d <= daysInMonth; d++) {
+            week.push(d);
+            if (week.length === 7) { rows.push(week); week = []; }
+          }
+          if (week.length > 0) {
+            while (week.length < 7) week.push(null);
+            rows.push(week);
+          }
+          return rows;
+        });
+
+        const getTasksForDay = (day) => {
+          if (!day) return [];
+          const y = currentMonth.value.getFullYear();
+          const m = currentMonth.value.getMonth();
+          return tasks.value.filter(task => {
+            if (!task.deadline) return false;
+            const d = new Date(task.deadline);
+            return d.getFullYear()===y && d.getMonth()===m && d.getDate()===day;
+          });
+        };
+
+        const isTodayCell = (day) => {
+          if (!day) return false;
+          const t = new Date();
+          return currentMonth.value.getFullYear()===t.getFullYear() &&
+                 currentMonth.value.getMonth()===t.getMonth() &&
+                 day===t.getDate();
+        };
+
+        const changeMonth = (delta) => {
+          const d = new Date(currentMonth.value);
+          d.setMonth(d.getMonth() + delta);
+          currentMonth.value = d;
+        };
+
+        onMounted(fetchTasks);
+        return {
+          view, tasks, loading, categories, completedCount,
+          markComplete, timelineTasks, isOverdue, isToday,
+          relativeTime, relativeClass,
+          currentMonth, currentMonthYear, calendarRows,
+          getTasksForDay, isTodayCell, changeMonth
+        };
+      }
+    });
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>
