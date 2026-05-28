@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CS2505 班级主页</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <script src="https://unpkg.com/element-plus"></script>
+  <script src="js/auth.js"></script>
   <style>
     :root {
       --primary: #667eea;
@@ -17,7 +22,6 @@
       --card-bg: rgba(255,255,255,0.88);
       --text: #2c3e50;
       --text-muted: #7f8c8d;
-      --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
       --shadow-md: 0 8px 32px rgba(0,0,0,0.06);
       --shadow-lg: 0 16px 48px rgba(0,0,0,0.1);
       --radius: 22px;
@@ -44,248 +48,163 @@
       opacity: 0.3;
       animation: float 12s ease-in-out infinite;
     }
-    .orb:nth-child(1) {
-      width: 300px; height: 300px;
-      background: var(--accent-2);
-      top: -80px; left: -60px;
-      animation-delay: 0s;
-    }
-    .orb:nth-child(2) {
-      width: 250px; height: 250px;
-      background: var(--accent-1);
-      bottom: -60px; right: -50px;
-      animation-delay: -4s;
-    }
-    .orb:nth-child(3) {
-      width: 180px; height: 180px;
-      background: var(--primary);
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      animation-delay: -8s;
-      opacity: 0.2;
-    }
+    .orb:nth-child(1) { width:300px; height:300px; background:var(--accent-2); top:-80px; left:-60px; }
+    .orb:nth-child(2) { width:250px; height:250px; background:var(--accent-1); bottom:-60px; right:-50px; animation-delay:-4s; }
+    .orb:nth-child(3) { width:180px; height:180px; background:var(--primary); top:50%; left:50%; transform:translate(-50%,-50%); animation-delay:-8s; opacity:0.2; }
 
     @keyframes float {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      25% { transform: translate(30px, -25px) scale(1.08); }
-      50% { transform: translate(-15px, 20px) scale(0.94); }
-      75% { transform: translate(-25px, -15px) scale(1.04); }
+      0%, 100% { transform: translate(0,0) scale(1); }
+      25% { transform: translate(30px,-25px) scale(1.08); }
+      50% { transform: translate(-15px,20px) scale(0.94); }
+      75% { transform: translate(-25px,-15px) scale(1.04); }
     }
 
+    /* ---- Top Navbar ---- */
+    .navbar {
+      position: fixed; top:0; left:0; right:0; z-index:100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 24px;
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.5);
+    }
+    .navbar-brand {
+      font-weight: 800; font-size: 1.05rem; letter-spacing: 1px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .navbar-brand .dot { width:8px; height:8px; border-radius:50%; background:var(--primary); display:inline-block; }
+    .navbar-actions { display:flex; align-items:center; gap:10px; font-size:0.85rem; }
+
+    .user-chip {
+      display:flex; align-items:center; gap:7px;
+      background: rgba(255,255,255,0.8); padding:5px 14px; border-radius:20px;
+      font-weight:500; color:#2c3e50; font-size:0.82rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .login-btn {
+      background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+      border: none !important; color: white !important;
+      padding: 8px 22px !important; border-radius: 20px !important;
+      font-weight: 700 !important; font-size: 0.85rem !important;
+      box-shadow: 0 4px 14px rgba(102,126,234,0.35) !important;
+      transition: all 0.3s ease !important;
+      letter-spacing: 0.5px;
+    }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.5) !important; }
+
+    /* ---- Main Content ---- */
     .container {
-      position: relative;
-      z-index: 1;
-      width: 90%;
-      max-width: 640px;
-      text-align: center;
+      position: relative; z-index:1; width:90%; max-width:640px;
+      text-align:center; padding-top:60px;
       animation: fadeInUp 0.8s ease-out;
     }
-
     @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity:0; transform:translateY(30px); }
+      to { opacity:1; transform:translateY(0); }
     }
 
-    .header { margin-bottom: 36px; }
-
-    .logo-icon {
-      display: inline-block;
-      font-size: 52px;
-      margin-bottom: 8px;
-      animation: bounce 2s ease-in-out infinite;
-    }
-
+    .header { margin-bottom: 32px; }
+    .logo-icon { display:inline-block; font-size:52px; margin-bottom:8px; animation: bounce 2s ease-in-out infinite; }
     @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+      0%,100% { transform:translateY(0); }
+      50% { transform:translateY(-10px); }
     }
-
     h1 {
-      font-size: 2.4rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 2px;
+      font-size:2.4rem; font-weight:800;
+      background:linear-gradient(135deg,var(--primary),var(--secondary));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text; letter-spacing:2px;
     }
+    .subtitle { color:var(--text-muted); font-size:0.95rem; margin-top:6px; letter-spacing:1px; }
 
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-top: 6px;
-      letter-spacing: 1px;
-    }
-
-    .nav-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-
+    .nav-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
     .nav-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: var(--radius);
-      padding: 28px 16px 24px;
-      text-decoration: none;
-      color: var(--text);
-      box-shadow: var(--shadow-md);
-      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.6);
+      background:var(--card-bg); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+      border-radius:var(--radius); padding:28px 16px 24px;
+      text-decoration:none; color:var(--text);
+      box-shadow:var(--shadow-md); transition:all 0.35s cubic-bezier(0.4,0,0.2,1);
+      display:flex; flex-direction:column; align-items:center;
+      position:relative; overflow:hidden;
+      border:1px solid rgba(255,255,255,0.6);
     }
-
     .nav-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent-1));
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 0.4s ease;
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      background:linear-gradient(90deg,var(--primary),var(--secondary),var(--accent-1));
+      transform:scaleX(0); transform-origin:left; transition:transform 0.4s ease;
     }
-
-    .nav-card:hover::before { transform: scaleX(1); }
-
-    .nav-card:hover {
-      transform: translateY(-6px);
-      box-shadow: var(--shadow-lg);
-      border-color: rgba(102, 126, 234, 0.25);
-    }
-
-    .nav-card:active {
-      transform: translateY(-2px);
-      transition: all 0.1s ease;
-    }
+    .nav-card:hover::before { transform:scaleX(1); }
+    .nav-card:hover { transform:translateY(-6px); box-shadow:var(--shadow-lg); border-color:rgba(102,126,234,0.25); }
+    .nav-card:active { transform:translateY(-2px); transition:all 0.1s ease; }
 
     .nav-icon-wrap {
-      width: 64px; height: 64px;
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 12px;
-      font-size: 32px;
-      transition: all 0.3s ease;
+      width:64px; height:64px; border-radius:18px;
+      display:flex; align-items:center; justify-content:center;
+      margin-bottom:12px; font-size:32px; transition:all 0.3s ease;
     }
+    .nav-card:nth-child(1) .nav-icon-wrap { background:linear-gradient(135deg,#e0f2fe,#bae6fd); }
+    .nav-card:nth-child(2) .nav-icon-wrap { background:linear-gradient(135deg,#fef3c7,#fde68a); }
+    .nav-card:nth-child(3) .nav-icon-wrap { background:linear-gradient(135deg,#ede9fe,#c4b5fd); }
+    .nav-card:nth-child(4) .nav-icon-wrap { background:linear-gradient(135deg,#fce7f3,#f9a8d4); }
 
-    .nav-card:nth-child(1) .nav-icon-wrap { background: linear-gradient(135deg, #e0f2fe, #bae6fd); }
-    .nav-card:nth-child(2) .nav-icon-wrap { background: linear-gradient(135deg, #fef3c7, #fde68a); }
-    .nav-card:nth-child(3) .nav-icon-wrap { background: linear-gradient(135deg, #ede9fe, #c4b5fd); }
-    .nav-card:nth-child(4) .nav-icon-wrap { background: linear-gradient(135deg, #fce7f3, #f9a8d4); }
-
-    .nav-label {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    .nav-desc {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
+    .nav-label { font-size:1.1rem; font-weight:700; letter-spacing:0.5px; }
+    .nav-desc { font-size:0.78rem; color:var(--text-muted); margin-top:4px; }
 
     .footer-note {
-      margin-top: 28px;
-      padding: 10px 20px;
-      display: inline-block;
-      background: rgba(255,255,255,0.5);
-      backdrop-filter: blur(8px);
-      border-radius: 20px;
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      letter-spacing: 0.5px;
-      animation: fadeInUp 0.8s ease-out 0.3s both;
+      margin-top:28px; padding:10px 20px; display:inline-block;
+      background:rgba(255,255,255,0.5); backdrop-filter:blur(8px);
+      border-radius:20px; color:var(--text-muted); font-size:0.8rem;
+      letter-spacing:0.5px; animation:fadeInUp 0.8s ease-out 0.3s both;
     }
+    .footer-note .dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#67C23A; margin-right:6px; animation:pulse-dot 2s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
-    .footer-note .dot {
-      display: inline-block;
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: #67C23A;
-      margin-right: 6px;
-      animation: pulse-dot 2s ease-in-out infinite;
-    }
+    .nav-card:nth-child(1){animation:fadeInUp 0.6s ease-out 0.1s both;}
+    .nav-card:nth-child(2){animation:fadeInUp 0.6s ease-out 0.2s both;}
+    .nav-card:nth-child(3){animation:fadeInUp 0.6s ease-out 0.3s both;}
+    .nav-card:nth-child(4){animation:fadeInUp 0.6s ease-out 0.4s both;}
 
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    .nav-card:nth-child(1) { animation: fadeInUp 0.6s ease-out 0.1s both; }
-    .nav-card:nth-child(2) { animation: fadeInUp 0.6s ease-out 0.2s both; }
-    .nav-card:nth-child(3) { animation: fadeInUp 0.6s ease-out 0.3s both; }
-    .nav-card:nth-child(4) { animation: fadeInUp 0.6s ease-out 0.4s both; }
-
-    /* Auth bar */
-    .auth-bar-wrap {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 10;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 20px;
-      font-size: 0.84rem;
-    }
-    .auth-bar-wrap .user-info {
-      background: rgba(255,255,255,0.65);
-      backdrop-filter: blur(8px);
-      padding: 5px 14px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #2c3e50;
-    }
-
-    @media (max-width: 480px) {
-      h1 { font-size: 1.8rem; }
-      .nav-grid { gap: 12px; }
-      .nav-card { padding: 20px 10px 18px; border-radius: 18px; }
-      .nav-icon-wrap { width: 48px; height: 48px; font-size: 24px; border-radius: 14px; }
-      .nav-label { font-size: 0.95rem; }
-      .nav-desc { font-size: 0.7rem; }
-      .orb { display: none; }
-      .auth-bar-wrap { justify-content: center; padding: 8px 12px; }
+    @media (max-width:480px) {
+      h1{font-size:1.8rem;}
+      .nav-grid{gap:12px;}
+      .nav-card{padding:20px 10px 18px; border-radius:18px;}
+      .nav-icon-wrap{width:48px; height:48px; font-size:24px; border-radius:14px;}
+      .nav-label{font-size:0.95rem;}
+      .nav-desc{font-size:0.7rem;}
+      .orb{display:none;}
+      .navbar{padding:8px 14px;}
+      .navbar-brand{font-size:0.9rem;}
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
-  <script src="https://unpkg.com/element-plus"></script>
-  <script src="js/auth.js"></script>
 </head>
 <body>
   <div class="bg-orbs">
-    <div class="orb"></div>
-    <div class="orb"></div>
-    <div class="orb"></div>
+    <div class="orb"></div><div class="orb"></div><div class="orb"></div>
   </div>
 
-  <div id="auth-widget">
-    <div class="auth-bar-wrap">
-      <template v-if="AuthState.user">
-        <span class="user-info">
-          👤 {{ AuthState.user.email }}
-          <el-tag v-if="AuthState.user?.is_admin" size="small" type="warning">管理员</el-tag>
-        </span>
-        <el-button size="small" text @click="doLogout">退出</el-button>
-      </template>
-      <template v-else>
-        <a href="login.html?redirect=index.html" style="text-decoration:none;">
-          <el-button size="small" type="primary" plain round>🔑 登录</el-button>
-        </a>
-      </template>
+  <!-- Top Navbar -->
+  <div id="navbar-app">
+    <div class="navbar">
+      <div class="navbar-brand">
+        <span class="dot"></span>CS2505 班级主页
+      </div>
+      <div class="navbar-actions">
+        <template v-if="AuthState.user">
+          <span class="user-chip">
+            👤 {{ AuthState.user.email }}
+            <el-tag v-if="AuthState.user?.is_admin" size="small" type="warning" effect="plain">管理员</el-tag>
+          </span>
+          <el-button size="small" text @click="doLogout">退出</el-button>
+        </template>
+        <template v-else>
+          <a href="login.html?redirect=index.html" style="text-decoration:none;">
+            <el-button class="login-btn" size="small">🔑 登录 / 注册</el-button>
+          </a>
+        </template>
+      </div>
     </div>
   </div>
 
@@ -325,17 +244,16 @@
   </div>
 
   <script>
-    const { createApp, onMounted } = Vue;
+    const { createApp } = Vue;
     createApp({
       setup() {
         const doLogout = () => {
           AuthActions.logout();
           ElementPlus.ElMessage.success('已退出登录');
         };
-
         return { AuthState, doLogout };
       }
-    }).use(ElementPlus).mount('#auth-widget');
+    }).use(ElementPlus).mount('#navbar-app');
   </script>
 </body>
 </html>

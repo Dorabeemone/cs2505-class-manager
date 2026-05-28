@@ -30,7 +30,7 @@
     .container {
       max-width: 760px;
       margin: 0 auto;
-      padding: 24px 20px 40px;
+      padding: 68px 20px 40px;
     }
 
     /* Header */
@@ -166,48 +166,68 @@
     }
     .back-link:hover { color: var(--primary); }
 
-    /* Auth bar */
-    .auth-bar {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 0 2px;
-      font-size: 0.84rem;
-      color: #606266;
+    /* Top Navbar */
+    .navbar {
+      position: fixed; top:0; left:0; right:0; z-index:100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 24px;
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.5);
     }
-    .auth-bar .user-info {
-      background: rgba(255,255,255,0.7);
-      backdrop-filter: blur(6px);
-      padding: 4px 12px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .navbar-brand {
+      font-weight: 800; font-size: 1.05rem; letter-spacing: 1px;
+      background: linear-gradient(135deg, var(--primary), #764ba2);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: flex; align-items: center; gap: 8px;
     }
+    .navbar-brand .dot { width:8px; height:8px; border-radius:50%; background:var(--primary); display:inline-block; }
+    .navbar-actions { display:flex; align-items:center; gap:10px; font-size:0.85rem; }
+
+    .user-chip {
+      display:flex; align-items:center; gap:7px;
+      background: rgba(255,255,255,0.8); padding:5px 14px; border-radius:20px;
+      font-weight:500; color:#2c3e50; font-size:0.82rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .login-btn-nav {
+      background: linear-gradient(135deg, var(--primary), #764ba2) !important;
+      border: none !important; color: white !important;
+      padding: 8px 22px !important; border-radius: 20px !important;
+      font-weight: 700 !important; font-size: 0.85rem !important;
+      box-shadow: 0 4px 14px rgba(102,126,234,0.35) !important;
+      transition: all 0.3s ease !important;
+    }
+    .login-btn-nav:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.5) !important; }
 
     @media (max-width: 480px) {
       .page-header h1 { font-size: 1.5rem; }
       .card { padding: 14px 16px; }
-      .auth-bar { justify-content: center; }
+      .navbar { padding:8px 14px; }
     }
   </style>
 </head>
 <body>
   <div id="app" class="container">
-    <div class="auth-bar" v-if="!authLoading">
-      <template v-if="AuthState.user">
-        <span class="user-info">
-          👤 {{ AuthState.user.email }}
-          <el-tag v-if="AuthState.user?.is_admin" size="small" type="warning">管理员</el-tag>
-        </span>
-        <el-button size="small" text @click="doLogout">退出</el-button>
-      </template>
-      <template v-else>
-        <a href="login.html?redirect=recruit.html" style="text-decoration:none;">
-          <el-button size="small" type="primary" plain>🔑 登录</el-button>
-        </a>
-      </template>
+    <!-- Navbar -->
+    <div class="navbar">
+      <a href="index.html" style="text-decoration:none;"><div class="navbar-brand"><span class="dot"></span>CS2505</div></a>
+      <div class="navbar-actions">
+        <template v-if="AuthState.user">
+          <span class="user-chip">
+            👤 {{ AuthState.user.email }}
+            <el-tag v-if="AuthState.user?.is_admin" size="small" type="warning" effect="plain">管理员</el-tag>
+          </span>
+          <el-button size="small" text @click="doLogout">退出</el-button>
+        </template>
+        <template v-else>
+          <a href="login.html?redirect=recruit.html" style="text-decoration:none;">
+            <el-button class="login-btn-nav" size="small">🔑 登录 / 注册</el-button>
+          </a>
+        </template>
+      </div>
     </div>
     <div class="page-header">
       <h1>📢 信息库</h1>
@@ -251,7 +271,6 @@
         const sb = window.AuthActions.supabase;
         const recruits = ref([]);
         const loading = ref(true);
-        const authLoading = ref(true);
 
         const doLogout = () => {
           AuthActions.logout();
@@ -268,8 +287,7 @@
         const typeStyle = (type) => typeColors[type] || typeColors['其他'];
         const typeIcon = (type) => typeIcons[type] || '📋';
 
-        onMounted(() => {
-          authLoading.value = false;
+        onMounted(async () => {
           loading.value = true;
           try {
             const { data, error } = await sb.from('recruitments').select('*').order('created_at',{ascending:false});
@@ -282,7 +300,7 @@
           }
         });
 
-        return { AuthState, authLoading, doLogout, recruits, loading, typeStyle, typeIcon };
+        return { AuthState, doLogout, recruits, loading, typeStyle, typeIcon };
       }
     }).use(ElementPlus).mount('#app');
   </script>

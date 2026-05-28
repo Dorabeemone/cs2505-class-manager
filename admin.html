@@ -40,39 +40,38 @@
       padding: 20px;
     }
     .lock-card {
-      background: rgba(255,255,255,0.88);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 24px;
-      padding: 48px 36px 36px;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 52px 36px 36px;
       text-align: center;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.08);
-      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.5);
+      border: none;
       width: 100%;
-      max-width: 420px;
-      animation: fadeInUp 0.6s ease-out;
+      max-width: 440px;
+      animation: fadeInUp 0.7s ease-out;
     }
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(24px); }
       to { opacity: 1; transform: translateY(0); }
     }
     .lock-icon {
-      font-size: 52px;
-      margin-bottom: 8px;
+      font-size: 60px;
+      margin-bottom: 10px;
       animation: bounce 2s ease-in-out infinite;
     }
     @keyframes bounce {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+      50% { transform: translateY(-10px); }
     }
     .lock-card h1 {
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       font-weight: 800;
       background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 4px;
+      margin-bottom: 6px; letter-spacing: 1px;
     }
     .lock-card .hint {
       font-size: 0.82rem;
@@ -104,18 +103,6 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .admin-user-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.84rem;
-      color: #606266;
-      background: rgba(255,255,255,0.7);
-      backdrop-filter: blur(6px);
-      padding: 4px 12px;
-      border-radius: 12px;
-    }
-
     /* Section cards */
     .section {
       background: rgba(255,255,255,0.82);
@@ -231,17 +218,27 @@
 
     <!-- ===== ADMIN PANEL ===== -->
     <div v-else>
-      <div class="admin-header">
+      <!-- Top Navbar -->
+      <div style="position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:10px 24px;background:rgba(255,255,255,0.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.5);">
+        <a href="index.html" style="text-decoration:none;">
+          <span style="font-weight:800;font-size:1.05rem;letter-spacing:1px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+            ⚙️ CS2505 管理后台
+          </span>
+        </a>
+        <div style="display:flex;align-items:center;gap:10px;font-size:0.85rem;">
+          <span style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,0.8);padding:5px 14px;border-radius:20px;font-weight:500;color:#2c3e50;font-size:0.82rem;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+            👤 {{ AuthState.user?.email }}
+            <el-tag size="small" type="warning" effect="plain">管理员</el-tag>
+          </span>
+          <a href="index.html" style="text-decoration:none;"><el-button size="small">🏠 主页</el-button></a>
+          <el-button size="small" type="danger" plain @click="doLogout">退出</el-button>
+        </div>
+      </div>
+
+      <div class="admin-header" style="margin-top:56px;">
         <h1>⚙️ 管理后台</h1>
         <div style="display:flex;align-items:center;gap:10px;">
-          <span class="admin-user-info">
-            👤 {{ AuthState.user?.email }}
-            <el-tag size="small" type="warning">管理员</el-tag>
-          </span>
-          <a href="index.html" style="text-decoration:none;">
-            <el-button size="small">🏠 主页</el-button>
-          </a>
-          <el-button size="small" type="danger" plain @click="doLogout">退出</el-button>
+          <el-tag type="warning" effect="dark">管理员模式</el-tag>
         </div>
       </div>
 
