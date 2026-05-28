@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - CS2505</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <script src="https://unpkg.com/element-plus"></script>
+  <script src="js/auth.js"></script>
+  <style>
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a6fd6;
+      --secondary: #764ba2;
+      --accent-1: #f093fb;
+      --accent-2: #4facfe;
+      --bg-start: #e8ecf4;
+      --bg-mid: #dce2f0;
+      --bg-end: #c8d6e5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 40%, var(--bg-end) 100%);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.3;
+      animation: float 12s ease-in-out infinite;
+    }
+    .orb:nth-child(1) {
+      width: 300px; height: 300px;
+      background: var(--accent-2);
+      top: -80px; left: -60px;
+      animation-delay: 0s;
+    }
+    .orb:nth-child(2) {
+      width: 250px; height: 250px;
+      background: var(--accent-1);
+      bottom: -60px; right: -50px;
+      animation-delay: -4s;
+    }
+    .orb:nth-child(3) {
+      width: 180px; height: 180px;
+      background: var(--primary);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation-delay: -8s;
+      opacity: 0.2;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -25px) scale(1.08); }
+      50% { transform: translate(-15px, 20px) scale(0.94); }
+      75% { transform: translate(-25px, -15px) scale(1.04); }
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      width: 90%;
+      max-width: 420px;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-card {
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 40px 32px 32px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.08);
+      border: 1px solid rgba(255,255,255,0.6);
+      text-align: center;
+    }
+
+    .login-card .logo {
+      font-size: 48px;
+      margin-bottom: 4px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .login-card h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
+
+    .login-card .subtitle {
+      font-size: 0.84rem;
+      color: #909399;
+      margin-bottom: 20px;
+    }
+
+    .login-card .el-tabs__nav {
+      width: 100%;
+      display: flex;
+    }
+    .login-card .el-tabs__item {
+      flex: 1;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .login-card .el-input {
+      margin-bottom: 12px;
+    }
+
+    .login-card .el-button {
+      width: 100%;
+      margin-top: 4px;
+      border-radius: 10px;
+      font-weight: 600;
+      height: 42px;
+    }
+
+    .error-msg {
+      color: #F56C6C;
+      font-size: 0.82rem;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .success-msg {
+      color: #67C23A;
+      font-size: 0.82rem;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 16px;
+      color: #7f8c8d;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--primary); }
+
+    /* Already logged in state */
+    .already-logged {
+      text-align: center;
+    }
+    .already-logged .check-icon {
+      font-size: 56px;
+      margin-bottom: 8px;
+    }
+    .already-logged h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    .already-logged p {
+      font-size: 0.9rem;
+      color: #606266;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 480px) {
+      .login-card { padding: 28px 18px 24px; border-radius: 18px; }
+      .orb { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+  </div>
+
+  <div id="app">
+    <!-- Already logged in -->
+    <div v-if="isAlreadyLoggedIn" class="login-card already-logged">
+      <div class="check-icon">✅</div>
+      <h2>您已登录</h2>
+      <p>当前账号：<strong>{{ currentUserEmail }}</strong></p>
+      <p style="font-size:0.82rem;color:#909399;">无需重复登录，请继续操作</p>
+      <a :href="redirect" style="text-decoration:none;">
+        <el-button type="primary" size="large" style="margin-top:12px;">前往目标页面 →</el-button>
+      </a>
+      <br>
+      <a href="index.html" class="back-link">← 返回主页</a>
+    </div>
+
+    <!-- Login / Register -->
+    <div v-else class="login-card">
+      <div class="logo">🔐</div>
+      <h1>CS2505 班级系统</h1>
+      <p class="subtitle">{{ authTab === 'login' ? '登录您的账号' : '注册新账号' }}</p>
+
+      <el-tabs v-model="authTab" stretch>
+        <el-tab-pane label="登录" name="login">
+          <el-input v-model="loginEmail" placeholder="邮箱地址" size="large" clearable>
+            <template #prepend>📧</template>
+          </el-input>
+          <el-input v-model="loginPwd" placeholder="密码" show-password size="large"
+            @keyup.enter="doLogin">
+            <template #prepend>🔒</template>
+          </el-input>
+          <el-button type="primary" @click="doLogin" :loading="authBusy" size="large">
+            登 录
+          </el-button>
+          <p v-if="authError" class="error-msg">{{ authError }}</p>
+        </el-tab-pane>
+
+        <el-tab-pane label="注册" name="register">
+          <el-input v-model="regEmail" placeholder="邮箱地址" size="large" clearable>
+            <template #prepend>📧</template>
+          </el-input>
+          <el-input v-model="regName" placeholder="姓名（可选）" size="large" clearable>
+            <template #prepend>👤</template>
+          </el-input>
+          <el-input v-model="regPwd" placeholder="密码（至少6位）" show-password size="large"
+            @keyup.enter="doRegister">
+            <template #prepend>🔒</template>
+          </el-input>
+          <el-button type="success" @click="doRegister" :loading="authBusy" size="large">
+            注册并登录
+          </el-button>
+          <p v-if="authError" class="error-msg">{{ authError }}</p>
+          <p v-if="regSuccess" class="success-msg">✅ 注册成功，正在跳转...</p>
+        </el-tab-pane>
+      </el-tabs>
+
+      <a href="index.html" class="back-link">← 返回主页</a>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+    createApp({
+      setup() {
+        // Parse redirect param
+        const urlParams = new URLSearchParams(window.location.search);
+        let redirectTo = urlParams.get('redirect') || 'index.html';
+        if (redirectTo === 'login.html') redirectTo = 'index.html';
+
+        const authTab = ref('login');
+        const authBusy = ref(false);
+        const authError = ref('');
+        const loginEmail = ref('');
+        const loginPwd = ref('');
+        const regEmail = ref('');
+        const regName = ref('');
+        const regPwd = ref('');
+        const regSuccess = ref(false);
+
+        const isAlreadyLoggedIn = computed(() => !!AuthState.user);
+        const currentUserEmail = computed(() => AuthState.user?.email || '');
+
+        const doLogin = async () => {
+          if (!loginEmail.value || !loginPwd.value) {
+            authError.value = '请输入邮箱和密码';
+            return;
+          }
+          authBusy.value = true;
+          authError.value = '';
+          try {
+            await AuthActions.login(loginEmail.value, loginPwd.value);
+            window.location.href = redirectTo;
+          } catch (e) {
+            authError.value = e.message || '登录失败';
+          } finally {
+            authBusy.value = false;
+          }
+        };
+
+        const doRegister = async () => {
+          if (!regEmail.value || !regPwd.value) {
+            authError.value = '请输入邮箱和密码';
+            return;
+          }
+          if (regPwd.value.length < 6) {
+            authError.value = '密码至少需要6位';
+            return;
+          }
+          authBusy.value = true;
+          authError.value = '';
+          regSuccess.value = false;
+          try {
+            await AuthActions.register(regEmail.value, regPwd.value);
+            regSuccess.value = true;
+            setTimeout(() => {
+              window.location.href = redirectTo;
+            }, 800);
+          } catch (e) {
+            authError.value = e.message || '注册失败';
+          } finally {
+            authBusy.value = false;
+          }
+        };
+
+        return {
+          authTab, authBusy, authError,
+          loginEmail, loginPwd, regEmail, regName, regPwd, regSuccess,
+          isAlreadyLoggedIn, currentUserEmail, redirect: redirectTo,
+          doLogin, doRegister
+        };
+      }
+    }).use(ElementPlus).mount('#app');
+  </script>
+</body>
+</html>

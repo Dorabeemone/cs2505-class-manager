@@ -214,32 +214,7 @@
       </div>
     </div>
 
-    <!-- ===== LOCK SCREEN 2: Not logged in ===== -->
-    <div v-else-if="!AuthState.user" class="lock-screen">
-      <div class="lock-card">
-        <div class="lock-icon">🔐</div>
-        <h1>管理员登录</h1>
-        <p class="hint">请使用管理员账号登录</p>
-        <el-input v-model="loginEmail" placeholder="邮箱地址" size="large" style="margin-bottom:12px;" clearable>
-          <template #prepend>📧</template>
-        </el-input>
-        <el-input v-model="loginPwd" placeholder="密码" show-password size="large"
-          @keyup.enter="doLogin">
-          <template #prepend>🔒</template>
-        </el-input>
-        <el-button type="primary" @click="doLogin" :loading="authBusy" size="large"
-          style="width:100%;margin-top:8px;border-radius:10px;">
-          登 录
-        </el-button>
-        <p class="error-msg" v-if="authError">{{ authError }}</p>
-        <el-divider />
-        <p style="font-size:0.82rem;color:#909399;">
-          没有账号？<el-link type="primary" @click="goRegister">注册新账号</el-link>
-        </p>
-      </div>
-    </div>
-
-    <!-- ===== LOCK SCREEN 3: Not admin ===== -->
+    <!-- ===== LOCK SCREEN 2: Not admin ===== -->
     <div v-else-if="!AuthState.user?.is_admin" class="lock-screen">
       <div class="lock-card">
         <div class="lock-icon">🚫</div>
@@ -251,34 +226,6 @@
         <el-button @click="doLogout" type="danger" plain style="margin-top:8px;">切换账号</el-button>
         <br>
         <el-link type="primary" @click="goHome" style="margin-top:12px;">← 返回主页</el-link>
-      </div>
-    </div>
-
-    <!-- ===== LOCK SCREEN 4: Register ===== -->
-    <div v-else-if="showRegister" class="lock-screen">
-      <div class="lock-card">
-        <div class="lock-icon">📝</div>
-        <h1>注册管理员账号</h1>
-        <p class="hint">注册后请联系已有管理员授权</p>
-        <el-input v-model="regEmail" placeholder="邮箱地址" size="large" style="margin-bottom:12px;" clearable>
-          <template #prepend>📧</template>
-        </el-input>
-        <el-input v-model="regName" placeholder="姓名（可选）" size="large" style="margin-bottom:12px;" clearable>
-          <template #prepend>👤</template>
-        </el-input>
-        <el-input v-model="regPwd" placeholder="密码（至少6位）" show-password size="large">
-          <template #prepend>🔒</template>
-        </el-input>
-        <el-button type="success" @click="doRegister" :loading="authBusy" size="large"
-          style="width:100%;margin-top:8px;border-radius:10px;">
-          注 册
-        </el-button>
-        <p class="error-msg" v-if="authError">{{ authError }}</p>
-        <p v-if="regSuccess" style="color:#67C23A;font-size:0.82rem;margin-top:8px;">
-          ✅ 注册成功！请联系已有管理员授权后登录。
-        </p>
-        <el-divider />
-        <el-link type="primary" @click="showRegister=false">← 返回登录</el-link>
       </div>
     </div>
 
@@ -458,79 +405,10 @@
 
         // ---- Auth state ----
         const authReady = ref(false);
-        const authBusy = ref(false);
-        const authError = ref('');
-        const loginEmail = ref('');
-        const loginPwd = ref('');
-        const showRegister = ref(false);
-        const regEmail = ref('');
-        const regName = ref('');
-        const regPwd = ref('');
-        const regSuccess = ref(false);
-
-        const doLogin = async () => {
-          if (!loginEmail.value || !loginPwd.value) {
-            authError.value = '请输入邮箱和密码';
-            return;
-          }
-          authBusy.value = true;
-          authError.value = '';
-          try {
-            const user = await AuthActions.login(loginEmail.value, loginPwd.value);
-            if (!user.is_admin) {
-              AuthActions.logout();
-              authError.value = '该账号不是管理员';
-            } else {
-              loginEmail.value = '';
-              loginPwd.value = '';
-            }
-          } catch (e) {
-            authError.value = e.message || '登录失败';
-          } finally {
-            authBusy.value = false;
-          }
-        };
 
         const doLogout = () => {
           AuthActions.logout();
           ElementPlus.ElMessage.success('已退出');
-        };
-
-        const doRegister = async () => {
-          if (!regEmail.value || !regPwd.value) {
-            authError.value = '请输入邮箱和密码';
-            return;
-          }
-          if (regPwd.value.length < 6) {
-            authError.value = '密码至少需要6位';
-            return;
-          }
-          authBusy.value = true;
-          authError.value = '';
-          regSuccess.value = false;
-          try {
-            await AuthActions.register(regEmail.value, regPwd.value);
-            // After auto-login, check if is_admin (newly registered users are not admin)
-            if (!AuthState.user.is_admin) {
-              AuthActions.logout();
-              authError.value = '注册成功，但该账号不是管理员。请联系已有管理员授权。';
-            } else {
-              regEmail.value = '';
-              regName.value = '';
-              regPwd.value = '';
-              showRegister.value = false;
-            }
-          } catch (e) {
-            authError.value = e.message || '注册失败';
-          } finally {
-            authBusy.value = false;
-          }
-        };
-
-        const goRegister = () => {
-          authError.value = '';
-          regSuccess.value = false;
-          showRegister.value = true;
         };
 
         const goHome = () => {
@@ -680,6 +558,10 @@
         // ---- Init ----
         onMounted(() => {
           authReady.value = true;
+          if (!AuthState.user) {
+            window.location.href = 'login.html?redirect=admin.html';
+            return;
+          }
           if (AuthState.user?.is_admin) {
             nextTick(() => fetchAll());
           }
@@ -692,10 +574,7 @@
 
         return {
           // Auth
-          AuthState, authReady, authBusy, authError,
-          loginEmail, loginPwd, showRegister,
-          regEmail, regName, regPwd, regSuccess,
-          doLogin, doLogout, doRegister, goRegister, goHome,
+          AuthState, authReady, doLogout, goHome,
           // Data
           tasks, recruits, announcements,
           showTaskForm, showRecruitForm, showAnnForm,
