@@ -199,7 +199,7 @@
       <template v-if="AuthState.user">
         <span class="user-info">
           👤 {{ AuthState.user.email }}
-          <el-tag v-if="AuthState.isAdmin" size="small" type="warning">管理员</el-tag>
+          <el-tag v-if="AuthState.user?.is_admin" size="small" type="warning">管理员</el-tag>
         </span>
         <el-button size="small" text @click="doLogout">退出</el-button>
       </template>
@@ -248,13 +248,13 @@
     const { createApp, ref, onMounted } = Vue;
     createApp({
       setup() {
-        const sb = window.SB;
+        const sb = window.AuthActions.supabase;
         const recruits = ref([]);
         const loading = ref(true);
         const authLoading = ref(true);
 
-        const doLogout = async () => {
-          await AuthActions.logout();
+        const doLogout = () => {
+          AuthActions.logout();
         };
 
         const typeColors = {
@@ -268,8 +268,7 @@
         const typeStyle = (type) => typeColors[type] || typeColors['其他'];
         const typeIcon = (type) => typeIcons[type] || '📋';
 
-        onMounted(async () => {
-          await AuthState.init();
+        onMounted(() => {
           authLoading.value = false;
           loading.value = true;
           try {

@@ -240,7 +240,7 @@
     </div>
 
     <!-- ===== LOCK SCREEN 3: Not admin ===== -->
-    <div v-else-if="!AuthState.isAdmin" class="lock-screen">
+    <div v-else-if="!AuthState.user?.is_admin" class="lock-screen">
       <div class="lock-card">
         <div class="lock-icon">🚫</div>
         <h1>权限不足</h1>
@@ -275,7 +275,7 @@
         </el-button>
         <p class="error-msg" v-if="authError">{{ authError }}</p>
         <p v-if="regSuccess" style="color:#67C23A;font-size:0.82rem;margin-top:8px;">
-          ✅ 注册成功！请登录（如需验证邮箱请查看收件箱）
+          ✅ 注册成功！请联系已有管理员授权后登录。
         </p>
         <el-divider />
         <el-link type="primary" @click="showRegister=false">← 返回登录</el-link>
@@ -454,7 +454,7 @@
     const { createApp, ref, reactive, onMounted, watch, nextTick } = Vue;
     const app = createApp({
       setup() {
-        const sb = window.SB;
+        const sb = window.AuthActions.supabase;
 
         // ---- Auth state ----
         const authReady = ref(false);
@@ -475,20 +475,24 @@
           }
           authBusy.value = true;
           authError.value = '';
-          const { error } = await AuthActions.login(loginEmail.value, loginPwd.value);
-          if (error) {
-            authError.value = error.message === 'Invalid login credentials'
-              ? '邮箱或密码错误' : (error.message || '登录失败');
-          } else {
-            loginEmail.value = '';
-            loginPwd.value = '';
-            // AuthState updates automatically via onAuthStateChange
+          try {
+            const user = await AuthActions.login(loginEmail.value, loginPwd.value);
+            if (!user.is_admin) {
+              AuthActions.logout();
+              authError.value = '该账号不是管理员';
+            } else {
+              loginEmail.value = '';
+              loginPwd.value = '';
+            }
+          } catch (e) {
+            authError.value = e.message || '登录失败';
+          } finally {
+            authBusy.value = false;
           }
-          authBusy.value = false;
         };
 
-        const doLogout = async () => {
-          await AuthActions.logout();
+        const doLogout = () => {
+          AuthActions.logout();
           ElementPlus.ElMessage.success('已退出');
         };
 
@@ -504,21 +508,23 @@
           authBusy.value = true;
           authError.value = '';
           regSuccess.value = false;
-          const { data, error } = await AuthActions.register(regEmail.value, regPwd.value, regName.value);
-          if (error) {
-            authError.value = error.message === 'User already registered'
-              ? '该邮箱已注册' : (error.message || '注册失败');
-          } else {
-            if (data.user?.identities?.length === 0) {
-              authError.value = '该邮箱已注册，请直接登录';
+          try {
+            await AuthActions.register(regEmail.value, regPwd.value);
+            // After auto-login, check if is_admin (newly registered users are not admin)
+            if (!AuthState.user.is_admin) {
+              AuthActions.logout();
+              authError.value = '注册成功，但该账号不是管理员。请联系已有管理员授权。';
             } else {
-              regSuccess.value = true;
               regEmail.value = '';
               regName.value = '';
               regPwd.value = '';
+              showRegister.value = false;
             }
+          } catch (e) {
+            authError.value = e.message || '注册失败';
+          } finally {
+            authBusy.value = false;
           }
-          authBusy.value = false;
         };
 
         const goRegister = () => {
@@ -579,13 +585,16 @@
         };
 
         const toggleComplete = async (task) => {
-          try {
-            const { data, error } = await AuthActions.markTaskComplete(task.id);
-            if (error) { ElementPlus.ElMessage.error('操作失败'); return; }
-            if (data?.error) { ElementPlus.ElMessage.error(data.error); return; }
-            ElementPlus.ElMessage.success(data?.action === 'completed' ? '已标记完成' : '已恢复为未完成');
-            fetchAll();
-          } catch (e) { ElementPlus.ElMessage.error('网络错误'); }
+          const newCompleted = !task.completed;
+          const updateData = {
+            completed: newCompleted,
+            completed_by_email: newCompleted ? (AuthState.user?.email || null) : null,
+            completed_at: newCompleted ? new Date().toISOString() : null
+          };
+          const { error } = await sb.from('tasks').update(updateData).eq('id', task.id);
+          if (error) { ElementPlus.ElMessage.error('操作失败: ' + error.message); return; }
+          ElementPlus.ElMessage.success(newCompleted ? '已标记完成' : '已恢复为未完成');
+          fetchAll();
         };
 
         const deleteTask = async (task) => {
@@ -669,17 +678,15 @@
         };
 
         // ---- Init ----
-        onMounted(async () => {
-          await AuthState.init();
+        onMounted(() => {
           authReady.value = true;
-          // If already admin, load data
-          if (AuthState.isAdmin) {
+          if (AuthState.user?.is_admin) {
             nextTick(() => fetchAll());
           }
         });
 
         // Watch for admin status change
-        watch(() => AuthState.isAdmin, (val) => {
+        watch(() => AuthState.user?.is_admin, (val) => {
           if (val) { nextTick(() => fetchAll()); }
         });
 

@@ -1,103 +1,68 @@
-// ===== Shared Auth Module for CS2505 Class Manager =====
-// Load this AFTER Vue and Supabase CDN scripts in each HTML page.
-// Provides window.AuthState (reactive) and window.AuthActions.
+// js/auth.js
+// ========== Supabase 客户端初始化 ==========
+const supabaseUrl = 'https://brqrrzvrgtvuqjnragfp.supabase.co';
+const supabaseKey = 'sb_publishable_G3JtNib7OmJktuVgxLCAlw_m8aQYudO';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-(function () {
-  const SB_URL = 'https://brqrrzvrgtvuqjnragfp.supabase.co';
-  const SB_KEY = 'sb_publishable_G3JtNib7OmJktuVgxLCAlw_m8aQYudO';
+// ========== 全局响应式登录状态（供所有页面使用）==========
+window.AuthState = Vue.reactive({
+  user: null,         // { email, is_admin }
+  loading: false
+});
 
-  if (!window.supabase) { console.error('[auth.js] Supabase SDK not loaded'); return; }
-  if (!window.Vue) { console.error('[auth.js] Vue not loaded'); return; }
-
-  const sb = window.supabase.createClient(SB_URL, SB_KEY);
-  window.SB = sb;
-
-  // ---------- Reactive Auth State ----------
-  window.AuthState = Vue.reactive({
-    user: null,
-    session: null,
-    isAdmin: false,
-    loading: true,
-    initialized: false,
-
-    async init() {
-      this.loading = true;
-      try {
-        const { data } = await sb.auth.getSession();
-        this.session = data.session;
-        this.user = data.session?.user ?? null;
-        if (this.user) {
-          await this._checkAdmin();
-        }
-      } catch (e) {
-        console.error('[auth.js] init error:', e);
-      } finally {
-        this.loading = false;
-        this.initialized = true;
-      }
-    },
-
-    async _checkAdmin() {
-      if (!this.user) { this.isAdmin = false; return; }
-      try {
-        const { data, error } = await sb
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', this.user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-        this.isAdmin = !error && !!data;
-      } catch (e) {
-        this.isAdmin = false;
-      }
-    },
-
-    async refreshAdmin() {
-      await this._checkAdmin();
+// 从 localStorage 恢复登录状态
+function restoreSession() {
+  const stored = localStorage.getItem('currentUser');
+  if (stored) {
+    try {
+      window.AuthState.user = JSON.parse(stored);
+    } catch (e) {
+      localStorage.removeItem('currentUser');
     }
-  });
+  }
+}
 
-  // ---------- Auth State Change Listener ----------
-  sb.auth.onAuthStateChange(async (event, session) => {
-    window.AuthState.session = session;
-    window.AuthState.user = session?.user ?? null;
-    if (session?.user) {
-      await window.AuthState._checkAdmin();
-    } else {
-      window.AuthState.isAdmin = false;
-    }
-  });
+// 登录
+async function login(email, password) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('email, is_admin')
+    .eq('email', email)
+    .eq('password', password)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error('邮箱或密码错误');
+  const user = { email: data.email, is_admin: data.is_admin };
+  localStorage.setItem('currentUser', JSON.stringify(user));
+  window.AuthState.user = user;
+  return user;
+}
 
-  // ---------- Auth Actions ----------
-  window.AuthActions = {
-    async login(email, password) {
-      const { data, error } = await sb.auth.signInWithPassword({ email, password });
-      return { data, error };
-    },
+// 注册
+async function register(email, password) {
+  // 检查是否已存在
+  const { data: existing } = await supabase
+    .from('users')
+    .select('email')
+    .eq('email', email)
+    .maybeSingle();
+  if (existing) throw new Error('该邮箱已注册');
+  const { error } = await supabase
+    .from('users')
+    .insert([{ email, password, is_admin: false }]);
+  if (error) throw error;
+  // 注册成功，自动登录
+  await login(email, password);
+}
 
-    async register(email, password, displayName) {
-      const options = displayName
-        ? { data: { display_name: displayName } }
-        : {};
-      const { data, error } = await sb.auth.signUp({ email, password, options });
-      return { data, error };
-    },
+// 退出
+function logout() {
+  localStorage.removeItem('currentUser');
+  window.AuthState.user = null;
+}
 
-    async logout() {
-      const { error } = await sb.auth.signOut();
-      return { error };
-    },
+// 初始化
+restoreSession();
 
-    async markTaskComplete(taskId) {
-      const { data, error } = await sb.rpc('toggle_task_complete', { p_task_id: taskId });
-      return { data, error };
-    },
-
-    async resendVerification(email) {
-      const { error } = await sb.auth.resend({ email, type: 'signup' });
-      return { error };
-    }
-  };
-
-  console.log('[auth.js] Auth module ready');
-})();
+// 暴露给全局
+window.AuthActions = { login, register, logout, supabase };
