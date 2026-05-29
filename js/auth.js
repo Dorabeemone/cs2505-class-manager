@@ -3,23 +3,19 @@
 (function () {
   'use strict';
 
-  // ---- Guard: verify dependencies ----
   if (!window.supabase || !window.Vue) {
     console.error('[auth] Missing dependencies. Ensure supabase and Vue are loaded before auth.js');
     return;
   }
 
-  // ---- Supabase client ----
   var SUPABASE_URL = 'https://brqrrzvrgtvuqjnragfp.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_G3JtNib7OmJktuVgxLCAlw_m8aQYudO';
   var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // ---- Reactive auth state ----
   window.AuthState = window.Vue.reactive({
-    user: null // { email: string, is_admin: boolean } or null
+    user: null
   });
 
-  // ---- Restore session from localStorage ----
   function restoreSession() {
     try {
       var stored = localStorage.getItem('currentUser');
@@ -32,64 +28,80 @@
         }
       }
     } catch (e) {
-      // localStorage not available or corrupted data — silently ignore
       try { localStorage.removeItem('currentUser'); } catch (ignored) {}
     }
   }
 
-  // ---- Login ----
+  // Login — returns user object { email, is_admin }
   async function login(email, password) {
+    email = (email || '').trim();
+    password = (password || '').trim();
+    if (!email || !password) throw new Error('请输入邮箱和密码');
+
+    // Use regular select (returns array) instead of maybeSingle to avoid PGRST116 406 errors
     var result = await db
       .from('users')
       .select('email, is_admin')
       .eq('email', email)
-      .eq('password', password)
-      .maybeSingle();
+      .eq('password', password);
 
-    if (result.error) throw new Error('登录失败，请稍后重试');
-    if (!result.data) throw new Error('邮箱或密码错误');
+    if (result.error) {
+      console.error('[auth] Login query error:', result.error);
+      throw new Error('登录失败，请稍后重试');
+    }
+    if (!result.data || result.data.length === 0) throw new Error('邮箱或密码错误');
 
-    var user = { email: result.data.email, is_admin: result.data.is_admin };
-    try {
-      localStorage.setItem('currentUser', JSON.stringify(user));
-    } catch (e) { /* localStorage not available */ }
+    var row = result.data[0];
+    var user = { email: row.email, is_admin: row.is_admin };
+    try { localStorage.setItem('currentUser', JSON.stringify(user)); } catch (e) {}
     window.AuthState.user = user;
+    console.log('[auth] Login OK:', user.email);
     return user;
   }
 
-  // ---- Register ----
+  // Register — creates user then auto-logs in
   async function register(email, password) {
-    // Check existing
+    email = (email || '').trim();
+    password = (password || '').trim();
+    if (!email || !password) throw new Error('请输入邮箱和密码');
+    if (password.length < 6) throw new Error('密码至少需要6位');
+
+    // Check if email already exists (regular select, no maybeSingle)
     var check = await db
       .from('users')
       .select('email')
-      .eq('email', email)
-      .maybeSingle();
+      .eq('email', email);
 
-    if (check.error) throw new Error('注册失败，请稍后重试');
-    if (check.data) throw new Error('该邮箱已注册');
+    if (check.error) {
+      console.error('[auth] Register check error:', check.error);
+      throw new Error('注册失败，请稍后重试');
+    }
+    if (check.data && check.data.length > 0) throw new Error('该邮箱已注册');
 
     // Insert new user
     var insert = await db
       .from('users')
       .insert([{ email: email, password: password, is_admin: false }]);
 
-    if (insert.error) throw new Error('注册失败：' + insert.error.message);
+    if (insert.error) {
+      console.error('[auth] Register insert error:', insert.error);
+      throw new Error('注册失败：' + insert.error.message);
+    }
 
-    // Auto-login
+    console.log('[auth] Register OK:', email);
+    // Auto-login after registration
     await login(email, password);
   }
 
-  // ---- Logout ----
+  // Logout
   function logout() {
     try { localStorage.removeItem('currentUser'); } catch (e) {}
     window.AuthState.user = null;
+    console.log('[auth] Logged out');
   }
 
-  // ---- Init ----
   restoreSession();
 
-  // ---- Public API ----
   window.AuthActions = {
     login: login,
     register: register,
