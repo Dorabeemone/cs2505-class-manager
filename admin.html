@@ -40,7 +40,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:linear-gr
 .s-icon.icon-task{background:#e8ecff}.s-icon.icon-recruit{background:#f0f9eb}.s-icon.icon-announce{background:#fef3e2}
 
 .form-card{background:#fff;padding:20px;border-radius:14px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.04);animation:up .3s ease-out}
-.form-card :deep(.el-form-item){margin-bottom:14px}.form-card :deep(.el-form-item:last-child){margin-bottom:0}
+.form-card .el-form-item{margin-bottom:14px}.form-card .el-form-item:last-child{margin-bottom:0}
 
 .item-row{display:flex;justify-content:space-between;align-items:center;background:#fff;padding:12px 16px;margin:8px 0;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.03);transition:all .2s;gap:12px;border-left:3px solid transparent}
 .item-row:hover{box-shadow:0 3px 12px rgba(0,0,0,.06);border-left-color:var(--p)}
@@ -50,8 +50,8 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:linear-gr
 .item-actions{display:flex;gap:6px;flex-shrink:0}
 .task-done{text-decoration:line-through;opacity:.45}
 
-:deep(.el-button--primary){--el-button-bg-color:var(--p);--el-button-border-color:var(--p);--el-button-hover-bg-color:var(--pd)}
-:deep(.el-button){font-weight:600}
+.el-button--primary{--el-button-bg-color:var(--p);--el-button-border-color:var(--p);--el-button-hover-bg-color:var(--pd)}
+.el-button{font-weight:600}
 
 @media(max-width:600px){
   .section{padding:16px}.item-row{flex-direction:column;align-items:flex-start}
