@@ -1,308 +1,116 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>信息库 - CS2505</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
-  <script src="https://unpkg.com/element-plus"></script>
-  <script src="js/auth.js"></script>
-  <style>
-    :root {
-      --primary: #667eea;
-      --type-volunteer: #67C23A;
-      --type-practice: #409EFF;
-      --type-competition: #E6A23C;
-      --type-other: #909399;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>信息库 - CS2505</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+<script src="https://unpkg.com/element-plus"></script>
+<script src="js/auth.js"></script>
+<style>
+:root{--p:#667eea;--s:#764ba2}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(160deg,#e8ecf4,#dce2f0 30%,#c8d6e5 60%,#e2e8f0);min-height:100vh;background-attachment:fixed}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+/* Navbar */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;display:flex;justify-content:space-between;align-items:center;padding:0 24px;background:rgba(255,255,255,.65);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.6)}
+.nav-logo a{font-weight:800;font-size:1.05rem;text-decoration:none;background:linear-gradient(135deg,var(--p),var(--s));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-right{display:flex;align-items:center;gap:10px;font-size:.85rem}
+.nav-user{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.85);padding:5px 14px;border-radius:20px;font-size:.82rem;color:#2c3e50}
+.nav-login{background:linear-gradient(135deg,var(--p),var(--s));border:none;color:#fff!important;padding:8px 22px;border-radius:20px;font-weight:700;font-size:.85rem;box-shadow:0 4px 14px rgba(102,126,234,.35);cursor:pointer;text-decoration:none;display:inline-block;transition:all .3s}
+.nav-login:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(102,126,234,.5)}
 
-    body {
-      font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(160deg, #e8ecf4 0%, #dce2f0 30%, #c8d6e5 60%, #e2e8f0 100%);
-      min-height: 100vh;
-      background-attachment: fixed;
-    }
+.container{max-width:760px;margin:0 auto;padding:70px 20px 40px}
 
-    .container {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 68px 20px 40px;
-    }
+/* Header */
+.page-header{text-align:center;padding:12px 0 8px}
+.page-header h1{font-size:1.9rem;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px}
+.subtitle{color:#7f8c8d;font-size:.88rem;margin-top:4px}
 
-    /* Header */
-    .page-header {
-      text-align: center;
-      padding: 20px 0 8px;
-    }
-    .page-header h1 {
-      font-size: 1.9rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 1px;
-    }
-    .page-header .subtitle {
-      color: #7f8c8d;
-      font-size: 0.88rem;
-      margin-top: 4px;
-    }
+/* Cards */
+.card{background:rgba(255,255,255,.88);backdrop-filter:blur(10px);border-radius:16px;padding:18px 20px;margin:14px 0;box-shadow:0 2px 12px rgba(0,0,0,.03);transition:all .35s;border-left:4px solid var(--p)}
+.card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.08)}
+.card.type-志愿服务{border-left-color:#67C23A}.card.type-社会实践{border-left-color:#409EFF}
+.card.type-文体竞赛{border-left-color:#E6A23C}.card.type-其他{border-left-color:#909399}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+.card-title{font-weight:700;font-size:1.05rem;color:#2c3e50}
+.card-desc{color:#5a6c7d;font-size:.9rem;line-height:1.6;margin:8px 0}
+.card-contact{font-size:.82rem;color:#909399;display:flex;align-items:center;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.04)}
+.type-tag{display:inline-flex;align-items:center;gap:3px;padding:3px 12px;border-radius:20px;font-size:.78rem;font-weight:600}
 
-    /* Card */
-    .card {
-      background: rgba(255,255,255,0.88);
-      backdrop-filter: blur(10px);
-      border-radius: 16px;
-      padding: 18px 20px;
-      margin: 14px 0;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.03);
-      transition: all 0.35s ease;
-      border-left: 4px solid var(--primary);
-      position: relative;
-      overflow: hidden;
-    }
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 28px rgba(0,0,0,0.08);
-    }
-
-    .card.type-志愿服务 { border-left-color: var(--type-volunteer); }
-    .card.type-社会实践 { border-left-color: var(--type-practice); }
-    .card.type-文体竞赛 { border-left-color: var(--type-competition); }
-    .card.type-其他 { border-left-color: var(--type-other); }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .card-title {
-      font-weight: 700;
-      font-size: 1.05rem;
-      color: #2c3e50;
-    }
-    .card-desc {
-      color: #5a6c7d;
-      font-size: 0.9rem;
-      line-height: 1.6;
-      margin: 8px 0;
-    }
-    .card-contact {
-      font-size: 0.82rem;
-      color: #909399;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(0,0,0,0.04);
-    }
-
-    /* Type tags with colors */
-    .type-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      padding: 3px 12px;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-
-    /* Empty state */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #909399;
-    }
-    .empty-state .empty-icon { font-size: 56px; margin-bottom: 12px; }
-    .empty-state p { font-size: 0.95rem; }
-
-    /* Skeleton loading */
-    .skeleton {
-      background: rgba(255,255,255,0.7);
-      border-radius: 16px;
-      padding: 18px 20px;
-      margin: 14px 0;
-      animation: shimmer 1.5s ease-in-out infinite;
-    }
-    .skeleton .sk-line {
-      height: 14px;
-      background: linear-gradient(90deg, #e8ecf4 25%, #dce2f0 50%, #e8ecf4 75%);
-      background-size: 200% 100%;
-      border-radius: 6px;
-      animation: shimmer 1.5s ease-in-out infinite;
-    }
-    .skeleton .sk-line:first-child { width: 55%; margin-bottom: 8px; }
-    .skeleton .sk-line:nth-child(2) { width: 85%; margin-bottom: 8px; }
-    .skeleton .sk-line:last-child { width: 30%; height: 10px; }
-
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    /* Back link */
-    .back-link {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      margin-top: 24px;
-      color: #7f8c8d;
-      text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-    .back-link:hover { color: var(--primary); }
-
-    /* Top Navbar */
-    .navbar {
-      position: fixed; top:0; left:0; right:0; z-index:100;
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 24px;
-      background: rgba(255,255,255,0.6);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.5);
-    }
-    .navbar-brand {
-      font-weight: 800; font-size: 1.05rem; letter-spacing: 1px;
-      background: linear-gradient(135deg, var(--primary), #764ba2);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .navbar-brand .dot { width:8px; height:8px; border-radius:50%; background:var(--primary); display:inline-block; }
-    .navbar-actions { display:flex; align-items:center; gap:10px; font-size:0.85rem; }
-
-    .user-chip {
-      display:flex; align-items:center; gap:7px;
-      background: rgba(255,255,255,0.8); padding:5px 14px; border-radius:20px;
-      font-weight:500; color:#2c3e50; font-size:0.82rem;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    }
-    .login-btn-nav {
-      background: linear-gradient(135deg, var(--primary), #764ba2) !important;
-      border: none !important; color: white !important;
-      padding: 8px 22px !important; border-radius: 20px !important;
-      font-weight: 700 !important; font-size: 0.85rem !important;
-      box-shadow: 0 4px 14px rgba(102,126,234,0.35) !important;
-      transition: all 0.3s ease !important;
-    }
-    .login-btn-nav:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.5) !important; }
-
-    @media (max-width: 480px) {
-      .page-header h1 { font-size: 1.5rem; }
-      .card { padding: 14px 16px; }
-      .navbar { padding:8px 14px; }
-    }
-  </style>
+.empty-state{text-align:center;padding:60px 20px;color:#909399}
+.empty-state .e-icon{font-size:56px;margin-bottom:12px}
+.skeleton{background:rgba(255,255,255,.7);border-radius:16px;padding:18px 20px;margin:14px 0}
+.sk-line{height:14px;background:linear-gradient(90deg,#e8ecf4 25%,#dce2f0 50%,#e8ecf4 75%);background-size:200% 100%;border-radius:6px;animation:shim 1.5s infinite}
+.sk-line:first-child{width:55%;margin-bottom:8px}.sk-line:nth-child(2){width:85%;margin-bottom:8px}.sk-line:last-child{width:30%;height:10px}
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.back-link{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:24px;color:#7f8c8d;text-decoration:none;font-size:.9rem;font-weight:500}
+.back-link:hover{color:var(--p)}
+@media(max-width:480px){.page-header h1{font-size:1.5rem}.card{padding:14px 16px}.navbar{padding:0 14px}}
+</style>
 </head>
 <body>
-  <div id="app" class="container">
-    <!-- Navbar -->
-    <div class="navbar">
-      <a href="index.html" style="text-decoration:none;"><div class="navbar-brand"><span class="dot"></span>CS2505</div></a>
-      <div class="navbar-actions">
-        <template v-if="AuthState.user">
-          <span class="user-chip">
-            👤 {{ AuthState.user.email }}
-            <el-tag v-if="AuthState.user?.is_admin" size="small" type="warning" effect="plain">管理员</el-tag>
-          </span>
-          <el-button size="small" text @click="doLogout">退出</el-button>
-        </template>
-        <template v-else>
-          <a href="login.html?redirect=recruit.html" style="text-decoration:none;">
-            <el-button class="login-btn-nav" size="small">🔑 登录 / 注册</el-button>
-          </a>
-        </template>
-      </div>
-    </div>
-    <div class="page-header">
-      <h1>📢 信息库</h1>
-      <p class="subtitle">招募信息 · 活动发布 · 资源汇总</p>
-    </div>
 
-    <!-- Loading -->
-    <div v-if="loading">
-      <div class="skeleton" v-for="i in 3" :key="i">
-        <div class="sk-line"></div>
-        <div class="sk-line"></div>
-        <div class="sk-line"></div>
-      </div>
+<div id="app" class="container">
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="nav-logo"><a href="index.html">CS2505</a></div>
+    <div class="nav-right">
+      <template v-if="AuthState.user">
+        <span class="nav-user">&#x1F464; {{ AuthState.user.email }}<el-tag v-if="AuthState.user.is_admin" size="small" type="warning" effect="plain" style="margin-left:4px;">管理员</el-tag></span>
+        <el-button size="small" text @click="logout">退出</el-button>
+      </template>
+      <template v-else>
+        <a href="login.html?redirect=recruit.html" class="nav-login">&#x1F511; 登录 / 注册</a>
+      </template>
     </div>
-
-    <!-- Empty -->
-    <div v-else-if="recruits.length === 0" class="empty-state">
-      <div class="empty-icon">📭</div>
-      <p>暂无招募信息</p>
-    </div>
-
-    <!-- Card list -->
-    <div v-for="r in recruits" :key="r.id" class="card" :class="'type-'+r.type">
-      <div class="card-header">
-        <span class="card-title">{{ r.title }}</span>
-        <span class="type-tag" :style="typeStyle(r.type)">{{ typeIcon(r.type) }} {{ r.type }}</span>
-      </div>
-      <p class="card-desc">{{ r.description }}</p>
-      <div class="card-contact">
-        📞 {{ r.contact || '暂无联系方式' }}
-      </div>
-    </div>
-
-    <a href="index.html" class="back-link">← 返回主页</a>
   </div>
 
-  <script>
-    const { createApp, ref, onMounted } = Vue;
-    createApp({
-      setup() {
-        const sb = window.AuthActions.supabase;
-        const recruits = ref([]);
-        const loading = ref(true);
+  <div class="page-header"><h1>&#x1F4E2; 信息库</h1><p class="subtitle">招募信息 &#183; 活动发布 &#183; 资源汇总</p></div>
 
-        const doLogout = () => {
-          AuthActions.logout();
-        };
+  <div v-if="loading"><div class="skeleton" v-for="i in 3"><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div></div></div>
+  <div v-else-if="recruits.length===0" class="empty-state"><div class="e-icon">&#x1F4ED;</div><p>暂无招募信息</p></div>
 
-        const typeColors = {
-          '志愿服务': { bg: '#f0f9eb', color: '#67C23A' },
-          '社会实践': { bg: '#ecf5ff', color: '#409EFF' },
-          '文体竞赛': { bg: '#fef3e2', color: '#E6A23C' },
-          '其他': { bg: '#f4f4f5', color: '#909399' }
-        };
-        const typeIcons = { '志愿服务':'🤝', '社会实践':'🔬', '文体竞赛':'🏆', '其他':'📋' };
+  <div v-for="r in recruits" class="card" :class="'type-'+r.type">
+    <div class="card-header"><span class="card-title">{{r.title}}</span><span class="type-tag" :style="tagStyle(r.type)">{{tagIcon(r.type)}} {{r.type}}</span></div>
+    <p class="card-desc">{{r.description}}</p>
+    <div class="card-contact">&#x1F4DE; {{r.contact||'暂无联系方式'}}</div>
+  </div>
 
-        const typeStyle = (type) => typeColors[type] || typeColors['其他'];
-        const typeIcon = (type) => typeIcons[type] || '📋';
+  <a href="index.html" class="back-link">&#8592; 返回主页</a>
+</div>
 
-        onMounted(async () => {
-          loading.value = true;
-          try {
-            const { data, error } = await sb.from('recruitments').select('*').order('created_at',{ascending:false});
-            if (error) { ElementPlus.ElMessage.error('加载失败'); return; }
-            if (data) recruits.value = data;
-          } catch (e) {
-            ElementPlus.ElMessage.error('网络错误，请刷新重试');
-          } finally {
-            loading.value = false;
-          }
-        });
+<script>
+(function(){
+  var app = Vue.createApp({
+    setup: function(){
+      var db = window.AuthActions.supabase;
+      var recruits = Vue.ref([]);
+      var loading = Vue.ref(true);
 
-        return { AuthState, doLogout, recruits, loading, typeStyle, typeIcon };
-      }
-    }).use(ElementPlus).mount('#app');
-  </script>
+      var colors = {'志愿服务':{bg:'#f0f9eb',color:'#67C23A'},'社会实践':{bg:'#ecf5ff',color:'#409EFF'},'文体竞赛':{bg:'#fef3e2',color:'#E6A23C'},'其他':{bg:'#f4f4f5',color:'#909399'}};
+      var icons = {'志愿服务':'&#x1F91D;','社会实践':'&#x1F52C;','文体竞赛':'&#x1F3C6;','其他':'&#x1F4CB;'};
+      var tagStyle = function(t){var c=colors[t]||colors['其他'];return{background:c.bg,color:c.color}};
+      var tagIcon = function(t){return icons[t]||icons['其他']};
+
+      var logout = function(){AuthActions.logout()};
+
+      Vue.onMounted(function(){
+        loading.value=true;
+        db.from('recruitments').select('*').order('created_at',{ascending:false}).then(function(r){
+          if(r.error){ElementPlus.ElMessage.error('加载失败');return}
+          if(r.data)recruits.value=r.data;
+        }).catch(function(){ElementPlus.ElMessage.error('网络错误，请刷新重试')}).finally(function(){loading.value=false});
+      });
+
+      return {AuthState:window.AuthState,logout:logout,recruits:recruits,loading:loading,tagStyle:tagStyle,tagIcon:tagIcon};
+    }
+  });
+  app.use(ElementPlus);
+  app.mount('#app');
+})();
+</script>
 </body>
 </html>

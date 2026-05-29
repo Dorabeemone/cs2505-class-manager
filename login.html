@@ -1,215 +1,160 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>登录 - CS2505 班级系统</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
-  <script src="https://unpkg.com/element-plus"></script>
-  <script src="js/auth.js"></script>
-  <style>
-    :root {
-      --primary: #667eea; --primary-dark: #5a6fd6; --secondary: #764ba2;
-      --accent-1: #f093fb; --accent-2: #4facfe;
-      --bg-start: #e8ecf4; --bg-mid: #dce2f0; --bg-end: #c8d6e5;
-    }
-    * { box-sizing: border-box; margin:0; padding:0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 - CS2505</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+<script src="https://unpkg.com/element-plus"></script>
+<script src="js/auth.js"></script>
+<style>
+:root { --primary:#667eea; --secondary:#764ba2; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'PingFang SC','Microsoft YaHei',sans-serif;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#e8ecf4,#dce2f0 40%,#c8d6e5);
+  overflow:hidden;
+}
+.bg-orb{position:fixed;border-radius:50%;filter:blur(80px);opacity:.25;pointer-events:none;z-index:0}
+.bg-orb:nth-child(1){width:350px;height:350px;background:#4facfe;top:-100px;left:-80px;animation:orb1 15s ease-in-out infinite}
+.bg-orb:nth-child(2){width:280px;height:280px;background:#f093fb;bottom:-80px;right:-60px;animation:orb2 18s ease-in-out infinite}
+@keyframes orb1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}
+@keyframes orb2{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,-60px)}}
 
-    body {
-      font-family: 'PingFang SC','Microsoft YaHei',-apple-system,BlinkMacSystemFont,sans-serif;
-      min-height:100vh; display:flex; align-items:center; justify-content:center;
-      background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 40%, var(--bg-end) 100%);
-      overflow: hidden; position: relative;
-    }
+#app{position:relative;z-index:1;width:92%;max-width:420px;animation:up .6s ease-out}
+@keyframes up{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 
-    .bg-orbs { position:fixed; inset:0; pointer-events:none; z-index:0; }
-    .orb { position:absolute; border-radius:50%; filter:blur(60px); opacity:0.3; animation:float 12s ease-in-out infinite; }
-    .orb:nth-child(1){width:300px;height:300px;background:var(--accent-2);top:-80px;left:-60px;}
-    .orb:nth-child(2){width:250px;height:250px;background:var(--accent-1);bottom:-60px;right:-50px;animation-delay:-4s;}
-    .orb:nth-child(3){width:180px;height:180px;background:var(--primary);top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-8s;opacity:0.2;}
-    @keyframes float {
-      0%,100%{transform:translate(0,0) scale(1);}
-      25%{transform:translate(30px,-25px) scale(1.08);}
-      50%{transform:translate(-15px,20px) scale(0.94);}
-      75%{transform:translate(-25px,-15px) scale(1.04);}
-    }
+.card{
+  background:rgba(255,255,255,.92);border-radius:24px;padding:40px 30px 30px;
+  box-shadow:0 20px 60px rgba(0,0,0,.1);text-align:center;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.card .icon{font-size:50px;margin-bottom:6px}
+.card h1{font-size:1.5rem;font-weight:800;color:#2c3e50;margin-bottom:4px}
+.card .sub{font-size:.84rem;color:#909399;margin-bottom:20px}
 
-    #app { position:relative; z-index:1; width:90%; max-width:440px; animation:fadeInUp 0.7s ease-out; }
-    @keyframes fadeInUp { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
+.card :deep(.el-tabs__nav){width:100%;display:flex}
+.card :deep(.el-tabs__item){flex:1;font-weight:700}
+.card :deep(.el-input){margin-bottom:14px}
+.card :deep(.el-input__wrapper){border-radius:12px}
 
-    .card {
-      background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border-radius: 28px; padding: 44px 36px 32px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.5);
-      text-align: center;
-    }
-    .card .logo { font-size: 52px; margin-bottom: 6px; animation: bounce 2s ease-in-out infinite; }
-    @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
-    .card h1 {
-      font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 2px;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-    .card .subtitle { font-size: 0.84rem; color: #909399; margin-bottom: 24px; }
+.btn-main{
+  width:100%;height:44px;border-radius:12px;font-weight:700;font-size:.95rem;
+  background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;
+  box-shadow:0 6px 20px rgba(102,126,234,.35);
+}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(102,126,234,.5)}
 
-    /* Tabs override */
-    .card .el-tabs__nav { width:100%; display:flex; }
-    .card .el-tabs__item { flex:1; text-align:center; font-weight:700; font-size:0.9rem; }
-    .card .el-tabs__active-bar { background: linear-gradient(90deg, var(--primary), var(--secondary)) !important; height:3px !important; border-radius:2px; }
-    .card .el-tabs__item.is-active { color: var(--primary) !important; }
+.btn-green{
+  width:100%;height:44px;border-radius:12px;font-weight:700;font-size:.95rem;
+  background:linear-gradient(135deg,#67C23A,#85CE61);border:none;color:#fff;
+  box-shadow:0 6px 20px rgba(103,194,58,.35);
+}
 
-    .card .el-input { margin-bottom: 14px; }
-    .card .el-input__wrapper { border-radius: 12px !important; box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important; }
-    .card .el-input__wrapper:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important; }
+.err{color:#F56C6C;font-size:.82rem;margin-top:10px}
+.ok{color:#67C23A;font-size:.82rem;margin-top:10px}
+.back{display:block;text-align:center;margin-top:18px;color:#909399;text-decoration:none;font-size:.85rem}
+.back:hover{color:#667eea}
 
-    .card .el-button { width:100%; border-radius: 14px !important; font-weight:700 !important; height:46px !important; font-size:0.95rem !important; letter-spacing:1px; }
-    .btn-login {
-      background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
-      border: none !important; color: white !important;
-      box-shadow: 0 6px 20px rgba(102,126,234,0.35) !important;
-      transition: all 0.3s ease !important;
-    }
-    .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(102,126,234,0.5) !important; }
-    .btn-register {
-      background: linear-gradient(135deg, #67C23A, #85CE61) !important;
-      border: none !important; color: white !important;
-      box-shadow: 0 6px 20px rgba(103,194,58,0.35) !important;
-    }
-    .btn-register:hover { transform: translateY(-2px); }
-
-    .error-msg { color:#F56C6C; font-size:0.82rem; margin-top:10px; text-align:center; }
-    .success-msg { color:#67C23A; font-size:0.82rem; margin-top:10px; text-align:center; }
-
-    .back-link {
-      display:flex; align-items:center; justify-content:center; gap:4px;
-      margin-top:18px; color:#7f8c8d; text-decoration:none;
-      font-size:0.85rem; font-weight:500; transition:color 0.2s;
-    }
-    .back-link:hover { color: var(--primary); }
-
-    .already-card { text-align:center; padding:48px 36px 36px; }
-    .already-card .check { font-size:64px; margin-bottom:12px; animation: bounce 1.5s ease-in-out infinite; }
-    .already-card h2 { font-size:1.3rem; font-weight:700; color:#2c3e50; margin-bottom:6px; }
-    .already-card p { font-size:0.9rem; color:#606266; margin-bottom:4px; }
-
-    @media (max-width:480px) {
-      .card { padding:30px 20px 24px; border-radius:22px; }
-      .orb { display:none; }
-    }
-  </style>
+@media(max-width:480px){.card{padding:30px 18px 24px;border-radius:20px}}
+</style>
 </head>
 <body>
-  <div class="bg-orbs">
-    <div class="orb"></div><div class="orb"></div><div class="orb"></div>
+<div class="bg-orb"></div><div class="bg-orb"></div>
+
+<div id="app">
+  <!-- Already logged in -->
+  <div v-if="AuthState.user" class="card">
+    <div class="icon">&#x2705;</div>
+    <h1>您已登录</h1>
+    <p style="color:#606266;margin:8px 0;">{{ AuthState.user.email }}</p>
+    <p style="color:#909399;font-size:.82rem;">继续前往目标页面</p>
+    <a :href="goto" style="text-decoration:none;">
+      <el-button class="btn-main" size="large" style="margin-top:16px;">前往目标页面 &#8594;</el-button>
+    </a>
+    <a href="index.html" class="back">&#8592; 返回主页</a>
   </div>
 
-  <div id="app">
-    <!-- Already Logged In -->
-    <div v-if="isAlreadyLoggedIn" class="card already-card">
-      <div class="check">✅</div>
-      <h2>您已登录</h2>
-      <p>当前账号：<strong>{{ currentUserEmail }}</strong></p>
-      <p style="font-size:0.82rem;color:#909399;">继续前往目标页面即可</p>
-      <a :href="redirect" style="text-decoration:none;">
-        <el-button type="primary" size="large" class="btn-login" style="margin-top:16px;">前往目标页面 →</el-button>
-      </a>
-      <br>
-      <a href="index.html" class="back-link">← 返回主页</a>
-    </div>
+  <!-- Login/Register form -->
+  <div v-else class="card">
+    <div class="icon">&#x1F510;</div>
+    <h1>CS2505 班级系统</h1>
+    <p class="sub">{{ tab==='login'?'登录您的账号':'创建新账号' }}</p>
 
-    <!-- Login / Register -->
-    <div v-else class="card">
-      <div class="logo">🔐</div>
-      <h1>CS2505 班级系统</h1>
-      <p class="subtitle">{{ authTab === 'login' ? '登录您的账号' : '创建新账号' }}</p>
+    <el-tabs v-model="tab" stretch>
+      <el-tab-pane label="登 录" name="login">
+        <el-input v-model="loginEmail" placeholder="邮箱地址" size="large" clearable />
+        <el-input v-model="loginPwd" placeholder="密码" show-password size="large" @keyup.enter="doLogin" />
+        <el-button class="btn-main" :loading="busy" @click="doLogin">登 录</el-button>
+        <p v-if="error" class="err">{{ error }}</p>
+      </el-tab-pane>
+      <el-tab-pane label="注 册" name="register">
+        <el-input v-model="regEmail" placeholder="邮箱地址" size="large" clearable />
+        <el-input v-model="regPwd" placeholder="密码（至少6位）" show-password size="large" @keyup.enter="doRegister" />
+        <el-button class="btn-green" :loading="busy" @click="doRegister">注册并登录</el-button>
+        <p v-if="error" class="err">{{ error }}</p>
+        <p v-if="done" class="ok">&#x2705; 注册成功，正在跳转...</p>
+      </el-tab-pane>
+    </el-tabs>
 
-      <el-tabs v-model="authTab" stretch>
-        <el-tab-pane label="登 录" name="login">
-          <el-input v-model="loginEmail" placeholder="邮箱地址" size="large" clearable>
-            <template #prefix>📧</template>
-          </el-input>
-          <el-input v-model="loginPwd" placeholder="密码" show-password size="large" @keyup.enter="doLogin">
-            <template #prefix>🔒</template>
-          </el-input>
-          <el-button class="btn-login" @click="doLogin" :loading="authBusy" size="large">
-            登 录
-          </el-button>
-          <p v-if="authError" class="error-msg">{{ authError }}</p>
-        </el-tab-pane>
-
-        <el-tab-pane label="注 册" name="register">
-          <el-input v-model="regEmail" placeholder="邮箱地址" size="large" clearable>
-            <template #prefix>📧</template>
-          </el-input>
-          <el-input v-model="regPwd" placeholder="密码（至少6位）" show-password size="large" @keyup.enter="doRegister">
-            <template #prefix>🔒</template>
-          </el-input>
-          <el-button class="btn-register" @click="doRegister" :loading="authBusy" size="large">
-            注 册 并 登 录
-          </el-button>
-          <p v-if="authError" class="error-msg">{{ authError }}</p>
-          <p v-if="regSuccess" class="success-msg">✅ 注册成功，正在跳转...</p>
-        </el-tab-pane>
-      </el-tabs>
-
-      <a href="index.html" class="back-link">← 返回主页</a>
-    </div>
+    <a href="index.html" class="back">&#8592; 返回主页</a>
   </div>
+</div>
 
-  <script>
-    const { createApp, ref, computed } = Vue;
-    createApp({
-      setup() {
-        const urlParams = new URLSearchParams(window.location.search);
-        let redirectTo = urlParams.get('redirect') || 'index.html';
-        if (redirectTo === 'login.html') redirectTo = 'index.html';
+<script>
+(function(){
+  var app = Vue.createApp({
+    setup: function(){
+      var validPages = ['index.html','ddl.html','admin.html','recruit.html','announce.html'];
+      var redirect = new URLSearchParams(location.search).get('redirect') || 'index.html';
+      if (validPages.indexOf(redirect) === -1) redirect = 'index.html';
 
-        const authTab = ref('login');
-        const authBusy = ref(false);
-        const authError = ref('');
-        const loginEmail = ref('');
-        const loginPwd = ref('');
-        const regEmail = ref('');
-        const regPwd = ref('');
-        const regSuccess = ref(false);
+      var tab = Vue.ref('login');
+      var busy = Vue.ref(false);
+      var error = Vue.ref('');
+      var loginEmail = Vue.ref('');
+      var loginPwd = Vue.ref('');
+      var regEmail = Vue.ref('');
+      var regPwd = Vue.ref('');
+      var done = Vue.ref(false);
 
-        const isAlreadyLoggedIn = computed(() => !!AuthState.user);
-        const currentUserEmail = computed(() => AuthState.user?.email || '');
+      var doLogin = function(){
+        if (!loginEmail.value || !loginPwd.value){ error.value='请输入邮箱和密码'; return; }
+        busy.value = true; error.value = '';
+        AuthActions.login(loginEmail.value, loginPwd.value).then(function(){
+          location.href = redirect;
+        }).catch(function(e){
+          error.value = e.message || '登录失败';
+        }).finally(function(){ busy.value = false; });
+      };
 
-        const doLogin = async () => {
-          if (!loginEmail.value || !loginPwd.value) { authError.value = '请输入邮箱和密码'; return; }
-          authBusy.value = true; authError.value = '';
-          try {
-            await AuthActions.login(loginEmail.value, loginPwd.value);
-            window.location.href = redirectTo;
-          } catch (e) {
-            authError.value = e.message || '登录失败';
-          } finally { authBusy.value = false; }
-        };
+      var doRegister = function(){
+        if (!regEmail.value || !regPwd.value){ error.value='请输入邮箱和密码'; return; }
+        if (regPwd.value.length < 6){ error.value='密码至少需要6位'; return; }
+        busy.value = true; error.value = ''; done.value = false;
+        AuthActions.register(regEmail.value, regPwd.value).then(function(){
+          done.value = true;
+          setTimeout(function(){ location.href = redirect; }, 800);
+        }).catch(function(e){
+          error.value = e.message || '注册失败';
+        }).finally(function(){ busy.value = false; });
+      };
 
-        const doRegister = async () => {
-          if (!regEmail.value || !regPwd.value) { authError.value = '请输入邮箱和密码'; return; }
-          if (regPwd.value.length < 6) { authError.value = '密码至少需要6位'; return; }
-          authBusy.value = true; authError.value = ''; regSuccess.value = false;
-          try {
-            await AuthActions.register(regEmail.value, regPwd.value);
-            regSuccess.value = true;
-            setTimeout(() => { window.location.href = redirectTo; }, 800);
-          } catch (e) {
-            authError.value = e.message || '注册失败';
-          } finally { authBusy.value = false; }
-        };
-
-        return {
-          authTab, authBusy, authError,
-          loginEmail, loginPwd, regEmail, regPwd, regSuccess,
-          isAlreadyLoggedIn, currentUserEmail, redirect: redirectTo,
-          doLogin, doRegister
-        };
-      }
-    }).use(ElementPlus).mount('#app');
-  </script>
+      return {
+        tab:tab, busy:busy, error:error,
+        loginEmail:loginEmail, loginPwd:loginPwd,
+        regEmail:regEmail, regPwd:regPwd, done:done,
+        goto:redirect, doLogin:doLogin, doRegister:doRegister,
+        AuthState: window.AuthState
+      };
+    }
+  });
+  app.use(ElementPlus);
+  app.mount('#app');
+})();
+</script>
 </body>
 </html>

@@ -1,68 +1,101 @@
-// js/auth.js
-// ========== Supabase 客户端初始化 ==========
-const supabaseUrl = 'https://brqrrzvrgtvuqjnragfp.supabase.co';
-const supabaseKey = 'sb_publishable_G3JtNib7OmJktuVgxLCAlw_m8aQYudO';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+// js/auth.js — Shared auth module for CS2505 Class Manager
+// Must be loaded AFTER: Vue 3, Supabase JS, Element Plus
+(function () {
+  'use strict';
 
-// ========== 全局响应式登录状态（供所有页面使用）==========
-window.AuthState = Vue.reactive({
-  user: null,         // { email, is_admin }
-  loading: false
-});
+  // ---- Guard: verify dependencies ----
+  if (!window.supabase || !window.Vue) {
+    console.error('[auth] Missing dependencies. Ensure supabase and Vue are loaded before auth.js');
+    return;
+  }
 
-// 从 localStorage 恢复登录状态
-function restoreSession() {
-  const stored = localStorage.getItem('currentUser');
-  if (stored) {
+  // ---- Supabase client ----
+  var SUPABASE_URL = 'https://brqrrzvrgtvuqjnragfp.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_G3JtNib7OmJktuVgxLCAlw_m8aQYudO';
+  var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ---- Reactive auth state ----
+  window.AuthState = window.Vue.reactive({
+    user: null // { email: string, is_admin: boolean } or null
+  });
+
+  // ---- Restore session from localStorage ----
+  function restoreSession() {
     try {
-      window.AuthState.user = JSON.parse(stored);
+      var stored = localStorage.getItem('currentUser');
+      if (stored) {
+        var parsed = JSON.parse(stored);
+        if (parsed && parsed.email) {
+          window.AuthState.user = parsed;
+        } else {
+          localStorage.removeItem('currentUser');
+        }
+      }
     } catch (e) {
-      localStorage.removeItem('currentUser');
+      // localStorage not available or corrupted data — silently ignore
+      try { localStorage.removeItem('currentUser'); } catch (ignored) {}
     }
   }
-}
 
-// 登录
-async function login(email, password) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('email, is_admin')
-    .eq('email', email)
-    .eq('password', password)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) throw new Error('邮箱或密码错误');
-  const user = { email: data.email, is_admin: data.is_admin };
-  localStorage.setItem('currentUser', JSON.stringify(user));
-  window.AuthState.user = user;
-  return user;
-}
+  // ---- Login ----
+  async function login(email, password) {
+    var result = await db
+      .from('users')
+      .select('email, is_admin')
+      .eq('email', email)
+      .eq('password', password)
+      .maybeSingle();
 
-// 注册
-async function register(email, password) {
-  // 检查是否已存在
-  const { data: existing } = await supabase
-    .from('users')
-    .select('email')
-    .eq('email', email)
-    .maybeSingle();
-  if (existing) throw new Error('该邮箱已注册');
-  const { error } = await supabase
-    .from('users')
-    .insert([{ email, password, is_admin: false }]);
-  if (error) throw error;
-  // 注册成功，自动登录
-  await login(email, password);
-}
+    if (result.error) throw new Error('登录失败，请稍后重试');
+    if (!result.data) throw new Error('邮箱或密码错误');
 
-// 退出
-function logout() {
-  localStorage.removeItem('currentUser');
-  window.AuthState.user = null;
-}
+    var user = { email: result.data.email, is_admin: result.data.is_admin };
+    try {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    } catch (e) { /* localStorage not available */ }
+    window.AuthState.user = user;
+    return user;
+  }
 
-// 初始化
-restoreSession();
+  // ---- Register ----
+  async function register(email, password) {
+    // Check existing
+    var check = await db
+      .from('users')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle();
 
-// 暴露给全局
-window.AuthActions = { login, register, logout, supabase };
+    if (check.error) throw new Error('注册失败，请稍后重试');
+    if (check.data) throw new Error('该邮箱已注册');
+
+    // Insert new user
+    var insert = await db
+      .from('users')
+      .insert([{ email: email, password: password, is_admin: false }]);
+
+    if (insert.error) throw new Error('注册失败：' + insert.error.message);
+
+    // Auto-login
+    await login(email, password);
+  }
+
+  // ---- Logout ----
+  function logout() {
+    try { localStorage.removeItem('currentUser'); } catch (e) {}
+    window.AuthState.user = null;
+  }
+
+  // ---- Init ----
+  restoreSession();
+
+  // ---- Public API ----
+  window.AuthActions = {
+    login: login,
+    register: register,
+    logout: logout,
+    supabase: db
+  };
+
+  console.log('[auth] Module ready, user:', window.AuthState.user ? window.AuthState.user.email : '(none)');
+})();

@@ -1,590 +1,266 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-  <title>管理后台 - CS2505</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
-  <script src="https://unpkg.com/element-plus"></script>
-  <script src="js/auth.js"></script>
-  <style>
-    :root {
-      --primary: #667eea;
-      --primary-dark: #5a6fd6;
-      --secondary: #764ba2;
-      --success: #67C23A;
-      --warning: #E6A23C;
-      --danger: #F56C6C;
-      --bg-start: #e8ecf4;
-      --bg-mid: #dce2f0;
-      --bg-end: #c8d6e5;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=yes">
+<title>管理后台 - CS2505</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+<script src="https://unpkg.com/element-plus"></script>
+<script src="js/auth.js"></script>
+<style>
+:root{--p:#667eea;--pd:#5a6fd6;--s:#764ba2;--ok:#67C23A;--warn:#E6A23C;--err:#F56C6C}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(160deg,#e8ecf4,#dce2f0 40%,#c8d6e5);min-height:100vh;background-attachment:fixed}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+/* Lock screens */
+.lock{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.lock-card{background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:28px;padding:52px 36px 36px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.1);max-width:440px;width:100%;animation:up .7s ease-out}
+@keyframes up{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.lock-icon{font-size:60px;margin-bottom:10px}
+.lock-card h1{font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,var(--p),var(--s));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px;letter-spacing:1px}
+.lock-card .hint{font-size:.82rem;color:#909399;margin-bottom:24px}
 
-    body {
-      font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 40%, var(--bg-end) 100%);
-      min-height: 100vh;
-      background-attachment: fixed;
-    }
+/* Navbar */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;display:flex;justify-content:space-between;align-items:center;padding:0 24px;background:rgba(255,255,255,.65);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.6)}
+.nav-logo a{font-weight:800;font-size:1.05rem;text-decoration:none;background:linear-gradient(135deg,var(--p),var(--s));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-right{display:flex;align-items:center;gap:10px}
 
-    /* ===== Lock screens ===== */
-    .lock-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    .lock-card {
-      background: rgba(255,255,255,0.9);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-radius: 28px;
-      padding: 52px 36px 36px;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.5);
-      border: none;
-      width: 100%;
-      max-width: 440px;
-      animation: fadeInUp 0.7s ease-out;
-    }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .lock-icon {
-      font-size: 60px;
-      margin-bottom: 10px;
-      animation: bounce 2s ease-in-out infinite;
-    }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-    .lock-card h1 {
-      font-size: 1.6rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 6px; letter-spacing: 1px;
-    }
-    .lock-card .hint {
-      font-size: 0.82rem;
-      color: #909399;
-      margin-bottom: 24px;
-    }
-    .lock-card .error-msg {
-      color: var(--danger);
-      font-size: 0.85rem;
-      margin-top: 8px;
-    }
+/* Admin panel */
+#app{max-width:860px;margin:0 auto;padding:70px 24px 48px}
+.admin-header{display:flex;justify-content:space-between;align-items:center;padding:12px 0 6px;flex-wrap:wrap;gap:12px}
+.admin-header h1{font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,var(--p),var(--s));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
-    /* ===== Admin panel ===== */
-    #app { max-width: 860px; margin: 0 auto; padding: 16px 24px 48px; }
+/* Section */
+.section{background:rgba(255,255,255,.82);backdrop-filter:blur(10px);border-radius:20px;padding:24px;margin:20px 0;box-shadow:0 4px 16px rgba(0,0,0,.04);border:1px solid rgba(255,255,255,.5);transition:all .3s}
+.section:hover{box-shadow:0 6px 24px rgba(0,0,0,.06)}
+.section h2{font-size:1.15rem;font-weight:700;color:#2c3e50;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.s-icon{width:32px;height:32px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+.s-icon.icon-task{background:#e8ecff}.s-icon.icon-recruit{background:#f0f9eb}.s-icon.icon-announce{background:#fef3e2}
 
-    .admin-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0 6px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .admin-header h1 {
-      font-size: 1.6rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    /* Section cards */
-    .section {
-      background: rgba(255,255,255,0.82);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      padding: 24px;
-      margin: 20px 0;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-      border: 1px solid rgba(255,255,255,0.5);
-      transition: all 0.3s ease;
-    }
-    .section:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.06); }
-    .section h2 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #2c3e50;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .section h2 .s-icon {
-      width: 32px; height: 32px;
-      border-radius: 10px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-    }
-    .s-icon.icon-task { background: #e8ecff; }
-    .s-icon.icon-recruit { background: #f0f9eb; }
-    .s-icon.icon-announce { background: #fef3e2; }
+.form-card{background:#fff;padding:20px;border-radius:14px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.04);animation:up .3s ease-out}
+.form-card :deep(.el-form-item){margin-bottom:14px}.form-card :deep(.el-form-item:last-child){margin-bottom:0}
 
-    /* Form card */
-    .form-card {
-      background: white;
-      padding: 20px;
-      border-radius: 14px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-      border: 1px solid rgba(0,0,0,0.04);
-      animation: fadeInUp 0.3s ease-out;
-    }
-    .form-card .el-form-item { margin-bottom: 14px; }
-    .form-card .el-form-item:last-child { margin-bottom: 0; }
+.item-row{display:flex;justify-content:space-between;align-items:center;background:#fff;padding:12px 16px;margin:8px 0;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.03);transition:all .2s;gap:12px;border-left:3px solid transparent}
+.item-row:hover{box-shadow:0 3px 12px rgba(0,0,0,.06);border-left-color:var(--p)}
+.item-body{flex:1;min-width:0}
+.item-title{font-weight:700;font-size:.92rem}
+.item-meta{font-size:.78rem;color:#909399;margin-top:2px}
+.item-actions{display:flex;gap:6px;flex-shrink:0}
+.task-done{text-decoration:line-through;opacity:.45}
 
-    /* Item row */
-    .item-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: white;
-      padding: 12px 16px;
-      margin: 8px 0;
-      border-radius: 12px;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.03);
-      transition: all 0.2s ease;
-      gap: 12px;
-      border-left: 3px solid transparent;
-    }
-    .item-row:hover {
-      box-shadow: 0 3px 12px rgba(0,0,0,0.06);
-      border-left-color: var(--primary);
-    }
-    .item-row .item-body { flex: 1; min-width: 0; }
-    .item-row .item-title { font-weight: 700; font-size: 0.92rem; }
-    .item-row .item-meta { font-size: 0.78rem; color: #909399; margin-top: 2px; }
-    .item-row .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+:deep(.el-button--primary){--el-button-bg-color:var(--p);--el-button-border-color:var(--p);--el-button-hover-bg-color:var(--pd)}
+:deep(.el-button){font-weight:600}
 
-    .task-done { text-decoration: line-through; opacity: 0.45; }
-
-    /* Element Plus overrides */
-    .el-button--primary {
-      --el-button-bg-color: var(--primary);
-      --el-button-border-color: var(--primary);
-      --el-button-hover-bg-color: var(--primary-dark);
-    }
-    .el-button { font-weight: 600; }
-
-    @media (max-width: 600px) {
-      .section { padding: 16px; }
-      .item-row { flex-direction: column; align-items: flex-start; }
-      .item-row .item-actions { align-self: flex-end; }
-      .lock-card { padding: 32px 20px 24px; }
-      .admin-header h1 { font-size: 1.3rem; }
-    }
-  </style>
+@media(max-width:600px){
+  .section{padding:16px}.item-row{flex-direction:column;align-items:flex-start}
+  .item-actions{align-self:flex-end}.lock-card{padding:32px 20px 24px}
+  .admin-header h1{font-size:1.3rem}.navbar{padding:0 14px}
+}
+</style>
 </head>
 <body>
-  <div id="app">
-    <!-- ===== LOCK SCREEN 1: Loading ===== -->
-    <div v-if="!authReady" class="lock-screen">
-      <div class="lock-card">
-        <div class="lock-icon">⏳</div>
-        <h1>加载中...</h1>
-      </div>
-    </div>
 
-    <!-- ===== LOCK SCREEN 2: Not admin ===== -->
-    <div v-else-if="!AuthState.user?.is_admin" class="lock-screen">
-      <div class="lock-card">
-        <div class="lock-icon">🚫</div>
-        <h1>权限不足</h1>
-        <p class="hint">您不是管理员，无法访问管理后台</p>
-        <p style="font-size:0.85rem;color:#909399;margin:12px 0;">
-          当前账号：<strong>{{ AuthState.user.email }}</strong>
-        </p>
-        <el-button @click="doLogout" type="danger" plain style="margin-top:8px;">切换账号</el-button>
-        <br>
-        <el-link type="primary" @click="goHome" style="margin-top:12px;">← 返回主页</el-link>
-      </div>
-    </div>
+<div id="app">
 
-    <!-- ===== ADMIN PANEL ===== -->
-    <div v-else>
-      <!-- Top Navbar -->
-      <div style="position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:10px 24px;background:rgba(255,255,255,0.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.5);">
-        <a href="index.html" style="text-decoration:none;">
-          <span style="font-weight:800;font-size:1.05rem;letter-spacing:1px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
-            ⚙️ CS2505 管理后台
-          </span>
-        </a>
-        <div style="display:flex;align-items:center;gap:10px;font-size:0.85rem;">
-          <span style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,0.8);padding:5px 14px;border-radius:20px;font-weight:500;color:#2c3e50;font-size:0.82rem;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
-            👤 {{ AuthState.user?.email }}
-            <el-tag size="small" type="warning" effect="plain">管理员</el-tag>
-          </span>
-          <a href="index.html" style="text-decoration:none;"><el-button size="small">🏠 主页</el-button></a>
-          <el-button size="small" type="danger" plain @click="doLogout">退出</el-button>
-        </div>
-      </div>
+  <!-- LOCK: Loading -->
+  <div v-if="ready===false" class="lock">
+    <div class="lock-card"><div class="lock-icon">&#x23F3;</div><h1>加载中...</h1></div>
+  </div>
 
-      <div class="admin-header" style="margin-top:56px;">
-        <h1>⚙️ 管理后台</h1>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <el-tag type="warning" effect="dark">管理员模式</el-tag>
-        </div>
-      </div>
+  <!-- LOCK: Not logged in (redirect) -->
+  <div v-else-if="!AuthState.user" class="lock">
+    <div class="lock-card"><div class="lock-icon">&#x1F510;</div><h1>管理员登录</h1><p class="hint">正在跳转到登录页面...</p></div>
+  </div>
 
-      <!-- ===== DDL Tasks ===== -->
-      <div class="section">
-        <h2>
-          <span class="s-icon icon-task">📌</span> DDL 任务管理
-        </h2>
-        <el-button type="primary" @click="showTaskForm=!showTaskForm" style="margin-bottom:12px;border-radius:10px;">
-          {{ showTaskForm ? '✕ 取消' : '+ 新建任务' }}
-        </el-button>
-
-        <div v-if="showTaskForm" class="form-card">
-          <el-form :model="newTask" label-width="80px" size="default">
-            <el-form-item label="任务标题">
-              <el-input v-model="newTask.title" placeholder="请输入任务标题"/>
-            </el-form-item>
-            <el-form-item label="分类">
-              <el-select v-model="newTask.category" style="width:100%;">
-                <el-option v-for="c in categories" :key="c" :label="c" :value="c"/>
-              </el-select>
-            </el-form-item>
-            <el-form-item label="截止日期">
-              <el-date-picker v-model="newTask.deadline" type="date" placeholder="选择日期" style="width:100%;"/>
-            </el-form-item>
-            <el-form-item label="负责人">
-              <el-input v-model="newTask.assignee" placeholder="负责人姓名"/>
-            </el-form-item>
-            <el-form-item label="备注">
-              <el-input v-model="newTask.notes" type="textarea" :rows="2" placeholder="可选备注"/>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="success" @click="addTask" :disabled="!newTask.title">保存任务</el-button>
-              <el-button @click="showTaskForm=false">取消</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-
-        <div v-if="tasks.length === 0" style="text-align:center;color:#c0c4cc;padding:24px;">暂无任务</div>
-        <div v-for="task in tasks" :key="task.id" class="item-row">
-          <div class="item-body">
-            <span class="item-title" :class="{ 'task-done': task.completed }">{{ task.title }}</span>
-            <div class="item-meta">
-              [{{ task.category }}] 👤 {{ task.assignee || '-' }}
-              📅 {{ task.deadline ? new Date(task.deadline).toLocaleDateString('zh-CN') : '无截止' }}
-              <span v-if="task.notes" style="color:#c0c4cc;"> · {{ task.notes }}</span>
-              <span v-if="task.completed && task.completed_by_email" style="color:#67C23A;"> · ✅ {{ task.completed_by_email }}</span>
-            </div>
-          </div>
-          <div class="item-actions">
-            <el-button size="small" @click="toggleComplete(task)" :type="task.completed ? 'warning' : 'success'">
-              {{ task.completed ? '恢复' : '完成' }}
-            </el-button>
-            <el-button size="small" type="danger" @click="deleteTask(task)">删除</el-button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== Recruitments ===== -->
-      <div class="section">
-        <h2>
-          <span class="s-icon icon-recruit">📢</span> 招募信息管理
-        </h2>
-        <el-button type="success" @click="showRecruitForm=!showRecruitForm" style="margin-bottom:12px;border-radius:10px;">
-          {{ showRecruitForm ? '✕ 取消' : '+ 发布招募' }}
-        </el-button>
-
-        <div v-if="showRecruitForm" class="form-card">
-          <el-form :model="newRecruit" label-width="80px" size="default">
-            <el-form-item label="标题">
-              <el-input v-model="newRecruit.title" placeholder="请输入招募标题"/>
-            </el-form-item>
-            <el-form-item label="类型">
-              <el-select v-model="newRecruit.type" style="width:100%;">
-                <el-option v-for="t in recruitTypes" :key="t" :label="t" :value="t"/>
-              </el-select>
-            </el-form-item>
-            <el-form-item label="描述">
-              <el-input v-model="newRecruit.desc" type="textarea" :rows="2" placeholder="招募描述"/>
-            </el-form-item>
-            <el-form-item label="联系方式">
-              <el-input v-model="newRecruit.contact" placeholder="手机/微信/QQ"/>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="success" @click="addRecruit" :disabled="!newRecruit.title">发布</el-button>
-              <el-button @click="showRecruitForm=false">取消</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-
-        <div v-if="recruits.length === 0" style="text-align:center;color:#c0c4cc;padding:24px;">暂无招募信息</div>
-        <div v-for="r in recruits" :key="r.id" class="item-row">
-          <div class="item-body">
-            <span class="item-title">{{ r.title }}</span>
-            <span style="margin-left:6px;">
-              <el-tag size="small">{{ r.type }}</el-tag>
-            </span>
-            <div class="item-meta">{{ r.description }} · 📞 {{ r.contact || '暂无' }}</div>
-          </div>
-          <div class="item-actions">
-            <el-button size="small" type="danger" @click="deleteRecruit(r)">删除</el-button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== Announcements ===== -->
-      <div class="section">
-        <h2>
-          <span class="s-icon icon-announce">📰</span> 班级公示管理
-        </h2>
-        <el-button type="warning" @click="showAnnForm=!showAnnForm" style="margin-bottom:12px;border-radius:10px;">
-          {{ showAnnForm ? '✕ 取消' : '+ 发布公示' }}
-        </el-button>
-
-        <div v-if="showAnnForm" class="form-card">
-          <el-form :model="newAnn" label-width="80px" size="default">
-            <el-form-item label="标题">
-              <el-input v-model="newAnn.title" placeholder="请输入公示标题"/>
-            </el-form-item>
-            <el-form-item label="活动日期">
-              <el-date-picker v-model="newAnn.date" type="date" placeholder="选择日期" style="width:100%;"/>
-            </el-form-item>
-            <el-form-item label="描述">
-              <el-input v-model="newAnn.desc" type="textarea" :rows="2" placeholder="活动描述"/>
-            </el-form-item>
-            <el-form-item label="推文链接">
-              <el-input v-model="newAnn.url" placeholder="https://...（可选）"/>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="warning" @click="addAnnounce" :disabled="!newAnn.title">发布</el-button>
-              <el-button @click="showAnnForm=false">取消</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-
-        <div v-if="announcements.length === 0" style="text-align:center;color:#c0c4cc;padding:24px;">暂无公示</div>
-        <div v-for="a in announcements" :key="a.id" class="item-row">
-          <div class="item-body">
-            <span class="item-title">{{ a.title }}</span>
-            <span v-if="a.article_url" style="margin-left:6px;">
-              <el-tag size="small" type="success">有链接</el-tag>
-            </span>
-            <div class="item-meta">
-              🗓 {{ a.activity_date ? new Date(a.activity_date).toLocaleDateString('zh-CN') : '日期未定' }}
-              · {{ a.description }}
-            </div>
-          </div>
-          <div class="item-actions">
-            <el-button size="small" type="danger" @click="deleteAnn(a)">删除</el-button>
-          </div>
-        </div>
-      </div>
+  <!-- LOCK: Not admin -->
+  <div v-else-if="!AuthState.user.is_admin" class="lock">
+    <div class="lock-card">
+      <div class="lock-icon">&#x1F6AB;</div><h1>权限不足</h1>
+      <p class="hint">您不是管理员，无法访问管理后台</p>
+      <p style="font-size:.85rem;color:#909399;margin:12px 0">当前账号：<strong>{{AuthState.user.email}}</strong></p>
+      <el-button @click="logout" type="danger" plain style="margin-top:8px">切换账号</el-button>
+      <br><el-link type="primary" @click="goHome" style="margin-top:12px">&#8592; 返回主页</el-link>
     </div>
   </div>
 
-  <script>
-    const { createApp, ref, reactive, onMounted, watch, nextTick } = Vue;
-    const app = createApp({
-      setup() {
-        const sb = window.AuthActions.supabase;
+  <!-- ADMIN PANEL -->
+  <div v-else>
+    <!-- Navbar -->
+    <div class="navbar">
+      <div class="nav-logo"><a href="index.html">&#x2699;&#xFE0F; CS2505 管理后台</a></div>
+      <div class="nav-right">
+        <el-tag type="warning" effect="dark" size="small">管理员模式</el-tag>
+        <a href="index.html" style="text-decoration:none"><el-button size="small">&#x1F3E0; 主页</el-button></a>
+        <el-button size="small" type="danger" plain @click="logout">退出</el-button>
+      </div>
+    </div>
 
-        // ---- Auth state ----
-        const authReady = ref(false);
+    <div class="admin-header"><h1>&#x2699;&#xFE0F; 管理后台</h1></div>
 
-        const doLogout = () => {
-          AuthActions.logout();
-          ElementPlus.ElMessage.success('已退出');
-        };
+    <!-- DDL Tasks -->
+    <div class="section">
+      <h2><span class="s-icon icon-task">&#x1F4CC;</span> DDL 任务管理</h2>
+      <el-button type="primary" @click="showTask=!showTask" style="margin-bottom:12px;border-radius:10px">{{showTask?'&#x2715; 取消':'+ 新建任务'}}</el-button>
+      <div v-if="showTask" class="form-card">
+        <el-form :model="nt" label-width="80px" size="default">
+          <el-form-item label="任务标题"><el-input v-model="nt.title" placeholder="请输入任务标题"/></el-form-item>
+          <el-form-item label="分类"><el-select v-model="nt.category" style="width:100%"><el-option v-for="c in categories" :key="c" :label="c" :value="c"/></el-select></el-form-item>
+          <el-form-item label="截止日期"><el-date-picker v-model="nt.deadline" type="date" placeholder="选择日期" style="width:100%"/></el-form-item>
+          <el-form-item label="负责人"><el-input v-model="nt.assignee" placeholder="负责人姓名"/></el-form-item>
+          <el-form-item label="备注"><el-input v-model="nt.notes" type="textarea" :rows="2" placeholder="可选备注"/></el-form-item>
+          <el-form-item><el-button type="success" @click="addTask" :disabled="!nt.title">保存任务</el-button><el-button @click="showTask=false">取消</el-button></el-form-item>
+        </el-form>
+      </div>
+      <div v-if="tasks.length===0" style="text-align:center;color:#c0c4cc;padding:24px">暂无任务</div>
+      <div v-for="t in tasks" class="item-row" :key="t.id">
+        <div class="item-body"><span class="item-title" :class="{'task-done':t.completed}">{{t.title}}</span>
+          <div class="item-meta">[{{t.category}}] &#x1F464; {{t.assignee||'-'}} &#x1F4C5; {{t.deadline?new Date(t.deadline).toLocaleDateString('zh-CN'):'无截止'}}<span v-if="t.notes" style="color:#c0c4cc"> &#183; {{t.notes}}</span><span v-if="t.completed&&t.completed_by_email" style="color:#67C23A"> &#183; &#x2705; {{t.completed_by_email}}</span></div></div>
+        <div class="item-actions"><el-button size="small" @click="toggleTask(t)" :type="t.completed?'warning':'success'">{{t.completed?'恢复':'完成'}}</el-button><el-button size="small" type="danger" @click="delTask(t)">删除</el-button></div>
+      </div>
+    </div>
 
-        const goHome = () => {
-          window.location.href = 'index.html';
-        };
+    <!-- Recruitments -->
+    <div class="section">
+      <h2><span class="s-icon icon-recruit">&#x1F4E2;</span> 招募信息管理</h2>
+      <el-button type="success" @click="showRec=!showRec" style="margin-bottom:12px;border-radius:10px">{{showRec?'&#x2715; 取消':'+ 发布招募'}}</el-button>
+      <div v-if="showRec" class="form-card">
+        <el-form :model="nr" label-width="80px" size="default">
+          <el-form-item label="标题"><el-input v-model="nr.title" placeholder="请输入招募标题"/></el-form-item>
+          <el-form-item label="类型"><el-select v-model="nr.type" style="width:100%"><el-option v-for="t in recTypes" :key="t" :label="t" :value="t"/></el-select></el-form-item>
+          <el-form-item label="描述"><el-input v-model="nr.desc" type="textarea" :rows="2" placeholder="招募描述"/></el-form-item>
+          <el-form-item label="联系方式"><el-input v-model="nr.contact" placeholder="手机/微信/QQ"/></el-form-item>
+          <el-form-item><el-button type="success" @click="addRec" :disabled="!nr.title">发布</el-button><el-button @click="showRec=false">取消</el-button></el-form-item>
+        </el-form>
+      </div>
+      <div v-if="recruits.length===0" style="text-align:center;color:#c0c4cc;padding:24px">暂无招募信息</div>
+      <div v-for="r in recruits" class="item-row" :key="r.id">
+        <div class="item-body"><span class="item-title">{{r.title}}</span><span style="margin-left:6px"><el-tag size="small">{{r.type}}</el-tag></span><div class="item-meta">{{r.description}} &#183; &#x1F4DE; {{r.contact||'暂无'}}</div></div>
+        <div class="item-actions"><el-button size="small" type="danger" @click="delRec(r)">删除</el-button></div>
+      </div>
+    </div>
 
-        // ---- Data state ----
-        const tasks = ref([]);
-        const recruits = ref([]);
-        const announcements = ref([]);
+    <!-- Announcements -->
+    <div class="section">
+      <h2><span class="s-icon icon-announce">&#x1F4F0;</span> 班级公示管理</h2>
+      <el-button type="warning" @click="showAnn=!showAnn" style="margin-bottom:12px;border-radius:10px">{{showAnn?'&#x2715; 取消':'+ 发布公示'}}</el-button>
+      <div v-if="showAnn" class="form-card">
+        <el-form :model="na" label-width="80px" size="default">
+          <el-form-item label="标题"><el-input v-model="na.title" placeholder="请输入公示标题"/></el-form-item>
+          <el-form-item label="活动日期"><el-date-picker v-model="na.date" type="date" placeholder="选择日期" style="width:100%"/></el-form-item>
+          <el-form-item label="描述"><el-input v-model="na.desc" type="textarea" :rows="2" placeholder="活动描述"/></el-form-item>
+          <el-form-item label="推文链接"><el-input v-model="na.url" placeholder="https://...（可选）"/></el-form-item>
+          <el-form-item><el-button type="warning" @click="addAnn" :disabled="!na.title">发布</el-button><el-button @click="showAnn=false">取消</el-button></el-form-item>
+        </el-form>
+      </div>
+      <div v-if="anns.length===0" style="text-align:center;color:#c0c4cc;padding:24px">暂无公示</div>
+      <div v-for="a in anns" class="item-row" :key="a.id">
+        <div class="item-body"><span class="item-title">{{a.title}}</span><span v-if="a.article_url" style="margin-left:6px"><el-tag size="small" type="success">有链接</el-tag></span><div class="item-meta">&#x1F5D3; {{a.activity_date?new Date(a.activity_date).toLocaleDateString('zh-CN'):'日期未定'}} &#183; {{a.description}}</div></div>
+        <div class="item-actions"><el-button size="small" type="danger" @click="delAnn(a)">删除</el-button></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        const showTaskForm = ref(false);
-        const showRecruitForm = ref(false);
-        const showAnnForm = ref(false);
+<script>
+(function(){
+  var app = Vue.createApp({
+    setup: function(){
+      var db = window.AuthActions.supabase;
+      var ready = Vue.ref(false);
 
-        const newTask = reactive({ title:'', category:'学习', deadline:null, assignee:'', notes:'' });
-        const newRecruit = reactive({ title:'', type:'志愿服务', desc:'', contact:'' });
-        const newAnn = reactive({ title:'', date:null, desc:'', url:'' });
+      // Data
+      var tasks = Vue.ref([]), recruits = Vue.ref([]), anns = Vue.ref([]);
+      var showTask = Vue.ref(false), showRec = Vue.ref(false), showAnn = Vue.ref(false);
+      var nt = Vue.reactive({title:'',category:'学习',deadline:null,assignee:'',notes:''});
+      var nr = Vue.reactive({title:'',type:'志愿服务',desc:'',contact:''});
+      var na = Vue.reactive({title:'',date:null,desc:'',url:''});
+      var categories = ['学习','班团会','党团','其他'];
+      var recTypes = ['志愿服务','社会实践','文体竞赛','其他'];
 
-        const categories = ['学习','班团会','党团','其他'];
-        const recruitTypes = ['志愿服务','社会实践','文体竞赛','其他'];
+      var fetchAll = function(){
+        db.from('tasks').select('*').order('deadline',{ascending:true}).then(function(r){if(!r.error&&r.data)tasks.value=r.data;}).catch(function(){});
+        db.from('recruitments').select('*').order('created_at',{ascending:false}).then(function(r){if(!r.error&&r.data)recruits.value=r.data;}).catch(function(){});
+        db.from('announcements').select('*').order('created_at',{ascending:false}).then(function(r){if(!r.error&&r.data)anns.value=r.data;}).catch(function(){});
+      };
 
-        const fetchAll = () => {
-          sb.from('tasks').select('*').order('deadline',{ascending:true}).then(({data,error})=>{
-            if (error) { ElementPlus.ElMessage.error('加载任务失败'); return; }
-            if (data) tasks.value = data;
-          }).catch(() => ElementPlus.ElMessage.error('网络错误'));
-          sb.from('recruitments').select('*').order('created_at',{ascending:false}).then(({data,error})=>{
-            if (error) { ElementPlus.ElMessage.error('加载招募失败'); return; }
-            if (data) recruits.value = data;
-          }).catch(() => ElementPlus.ElMessage.error('网络错误'));
-          sb.from('announcements').select('*').order('created_at',{ascending:false}).then(({data,error})=>{
-            if (error) { ElementPlus.ElMessage.error('加载公示失败'); return; }
-            if (data) announcements.value = data;
-          }).catch(() => ElementPlus.ElMessage.error('网络错误'));
-        };
-
-        // ---- Task CRUD ----
-        const addTask = async () => {
-          if (!newTask.title) { ElementPlus.ElMessage.warning('请输入任务标题'); return; }
-          try {
-            const { error } = await sb.from('tasks').insert([{
-              title:newTask.title, category:newTask.category, deadline:newTask.deadline,
-              assignee:newTask.assignee, notes:newTask.notes
-            }]);
-            if (error) { ElementPlus.ElMessage.error('添加失败: ' + error.message); return; }
-            ElementPlus.ElMessage.success('任务已添加');
-            Object.assign(newTask, { title:'', category:'学习', deadline:null, assignee:'', notes:'' });
-            showTaskForm.value = false;
-            fetchAll();
-          } catch (e) { ElementPlus.ElMessage.error('网络错误'); }
-        };
-
-        const toggleComplete = async (task) => {
-          const newCompleted = !task.completed;
-          const updateData = {
-            completed: newCompleted,
-            completed_by_email: newCompleted ? (AuthState.user?.email || null) : null,
-            completed_at: newCompleted ? new Date().toISOString() : null
-          };
-          const { error } = await sb.from('tasks').update(updateData).eq('id', task.id);
-          if (error) { ElementPlus.ElMessage.error('操作失败: ' + error.message); return; }
-          ElementPlus.ElMessage.success(newCompleted ? '已标记完成' : '已恢复为未完成');
-          fetchAll();
-        };
-
-        const deleteTask = async (task) => {
-          try {
-            await ElementPlus.ElMessageBox.confirm(
-              `确定要删除任务「${task.title}」吗？此操作不可恢复。`,
-              '确认删除',
-              { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' }
-            );
-            const { error } = await sb.from('tasks').delete().eq('id', task.id);
-            if (error) { ElementPlus.ElMessage.error('删除失败: ' + error.message); return; }
-            ElementPlus.ElMessage.success('任务已删除');
-            fetchAll();
-          } catch (e) {
-            if (e !== 'cancel' && e !== 'close') ElementPlus.ElMessage.error('操作取消或网络错误');
-          }
-        };
-
-        // ---- Recruit CRUD ----
-        const addRecruit = async () => {
-          if (!newRecruit.title) { ElementPlus.ElMessage.warning('请输入标题'); return; }
-          try {
-            const { error } = await sb.from('recruitments').insert([{
-              title:newRecruit.title, type:newRecruit.type,
-              description:newRecruit.desc, contact:newRecruit.contact
-            }]);
-            if (error) { ElementPlus.ElMessage.error('发布失败: ' + error.message); return; }
-            ElementPlus.ElMessage.success('招募已发布');
-            Object.assign(newRecruit, { title:'', type:'志愿服务', desc:'', contact:'' });
-            showRecruitForm.value = false;
-            fetchAll();
-          } catch (e) { ElementPlus.ElMessage.error('网络错误'); }
-        };
-
-        const deleteRecruit = async (r) => {
-          try {
-            await ElementPlus.ElMessageBox.confirm(
-              `确定要删除「${r.title}」吗？`,
-              '确认删除',
-              { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' }
-            );
-            const { error } = await sb.from('recruitments').delete().eq('id', r.id);
-            if (error) { ElementPlus.ElMessage.error('删除失败: ' + error.message); return; }
-            ElementPlus.ElMessage.success('已删除');
-            fetchAll();
-          } catch (e) {
-            if (e !== 'cancel' && e !== 'close') ElementPlus.ElMessage.error('操作取消');
-          }
-        };
-
-        // ---- Announce CRUD ----
-        const addAnnounce = async () => {
-          if (!newAnn.title) { ElementPlus.ElMessage.warning('请输入标题'); return; }
-          try {
-            const { error } = await sb.from('announcements').insert([{
-              title:newAnn.title, activity_date:newAnn.date,
-              description:newAnn.desc, article_url:newAnn.url
-            }]);
-            if (error) { ElementPlus.ElMessage.error('发布失败: ' + error.message); return; }
-            ElementPlus.ElMessage.success('公示已发布');
-            Object.assign(newAnn, { title:'', date:null, desc:'', url:'' });
-            showAnnForm.value = false;
-            fetchAll();
-          } catch (e) { ElementPlus.ElMessage.error('网络错误'); }
-        };
-
-        const deleteAnn = async (a) => {
-          try {
-            await ElementPlus.ElMessageBox.confirm(
-              `确定要删除公示「${a.title}」吗？`,
-              '确认删除',
-              { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' }
-            );
-            const { error } = await sb.from('announcements').delete().eq('id', a.id);
-            if (error) { ElementPlus.ElMessage.error('删除失败: ' + error.message); return; }
-            ElementPlus.ElMessage.success('已删除');
-            fetchAll();
-          } catch (e) {
-            if (e !== 'cancel' && e !== 'close') ElementPlus.ElMessage.error('操作取消');
-          }
-        };
-
-        // ---- Init ----
-        onMounted(() => {
-          authReady.value = true;
-          if (!AuthState.user) {
-            window.location.href = 'login.html?redirect=admin.html';
-            return;
-          }
-          if (AuthState.user?.is_admin) {
-            nextTick(() => fetchAll());
-          }
+      // CRUD
+      var addTask = function(){
+        if(!nt.title){ElementPlus.ElMessage.warning('请输入任务标题');return}
+        db.from('tasks').insert([{title:nt.title,category:nt.category,deadline:nt.deadline,assignee:nt.assignee,notes:nt.notes}]).then(function(r){
+          if(r.error){ElementPlus.ElMessage.error('添加失败: '+r.error.message);return}
+          ElementPlus.ElMessage.success('任务已添加');
+          Object.assign(nt,{title:'',category:'学习',deadline:null,assignee:'',notes:''});
+          showTask.value=false;fetchAll();
+        }).catch(function(){ElementPlus.ElMessage.error('网络错误')});
+      };
+      var toggleTask = function(t){
+        var nv=!t.completed;
+        db.from('tasks').update({completed:nv,completed_by_email:nv?(window.AuthState.user?window.AuthState.user.email:null):null,completed_at:nv?new Date().toISOString():null}).eq('id',t.id).then(function(r){
+          if(r.error){ElementPlus.ElMessage.error('操作失败: '+r.error.message);return}
+          ElementPlus.ElMessage.success(nv?'已标记完成':'已恢复为未完成');fetchAll();
         });
+      };
+      var delTask = function(t){
+        ElementPlus.ElMessageBox.confirm('确定要删除任务「'+t.title+'」吗？此操作不可恢复。','确认删除',{confirmButtonText:'确认删除',cancelButtonText:'取消',type:'warning'}).then(function(){
+          return db.from('tasks').delete().eq('id',t.id);
+        }).then(function(r){if(r&&r.error){ElementPlus.ElMessage.error('删除失败: '+r.error.message);return}ElementPlus.ElMessage.success('任务已删除');fetchAll();}).catch(function(e){if(e!=='cancel'&&e!=='close')ElementPlus.ElMessage.error('操作取消或网络错误')});
+      };
+      var addRec = function(){
+        if(!nr.title){ElementPlus.ElMessage.warning('请输入标题');return}
+        db.from('recruitments').insert([{title:nr.title,type:nr.type,description:nr.desc,contact:nr.contact}]).then(function(r){
+          if(r.error){ElementPlus.ElMessage.error('发布失败: '+r.error.message);return}
+          ElementPlus.ElMessage.success('招募已发布');
+          Object.assign(nr,{title:'',type:'志愿服务',desc:'',contact:''});
+          showRec.value=false;fetchAll();
+        }).catch(function(){ElementPlus.ElMessage.error('网络错误')});
+      };
+      var delRec = function(r){
+        ElementPlus.ElMessageBox.confirm('确定要删除「'+r.title+'」吗？','确认删除',{confirmButtonText:'确认删除',cancelButtonText:'取消',type:'warning'}).then(function(){
+          return db.from('recruitments').delete().eq('id',r.id);
+        }).then(function(rr){if(rr&&rr.error){ElementPlus.ElMessage.error('删除失败: '+rr.error.message);return}ElementPlus.ElMessage.success('已删除');fetchAll();}).catch(function(e){if(e!=='cancel'&&e!=='close')ElementPlus.ElMessage.error('操作取消')});
+      };
+      var addAnn = function(){
+        if(!na.title){ElementPlus.ElMessage.warning('请输入标题');return}
+        db.from('announcements').insert([{title:na.title,activity_date:na.date,description:na.desc,article_url:na.url}]).then(function(r){
+          if(r.error){ElementPlus.ElMessage.error('发布失败: '+r.error.message);return}
+          ElementPlus.ElMessage.success('公示已发布');
+          Object.assign(na,{title:'',date:null,desc:'',url:''});
+          showAnn.value=false;fetchAll();
+        }).catch(function(){ElementPlus.ElMessage.error('网络错误')});
+      };
+      var delAnn = function(a){
+        ElementPlus.ElMessageBox.confirm('确定要删除公示「'+a.title+'」吗？','确认删除',{confirmButtonText:'确认删除',cancelButtonText:'取消',type:'warning'}).then(function(){
+          return db.from('announcements').delete().eq('id',a.id);
+        }).then(function(rr){if(rr&&rr.error){ElementPlus.ElMessage.error('删除失败: '+rr.error.message);return}ElementPlus.ElMessage.success('已删除');fetchAll();}).catch(function(e){if(e!=='cancel'&&e!=='close')ElementPlus.ElMessage.error('操作取消')});
+      };
 
-        // Watch for admin status change
-        watch(() => AuthState.user?.is_admin, (val) => {
-          if (val) { nextTick(() => fetchAll()); }
-        });
+      var logout = function(){AuthActions.logout();ElementPlus.ElMessage.success('已退出')};
+      var goHome = function(){location.href='index.html'};
 
-        return {
-          // Auth
-          AuthState, authReady, doLogout, goHome,
-          // Data
-          tasks, recruits, announcements,
-          showTaskForm, showRecruitForm, showAnnForm,
-          newTask, newRecruit, newAnn,
-          categories, recruitTypes,
-          addTask, toggleComplete, deleteTask,
-          addRecruit, deleteRecruit,
-          addAnnounce, deleteAnn
-        };
-      }
-    });
-    app.use(ElementPlus);
-    app.mount('#app');
-  </script>
+      Vue.onMounted(function(){
+        if(!window.AuthState.user){ location.href='login.html?redirect=admin.html'; return; }
+        if(!window.AuthState.user.is_admin){ ready.value = true; return; }
+        ready.value = true;
+        Vue.nextTick(function(){fetchAll()});
+      });
+
+      Vue.watch(function(){return window.AuthState.user&&window.AuthState.user.is_admin},function(v){if(v){Vue.nextTick(function(){fetchAll()})}});
+
+      return {
+        AuthState:window.AuthState, ready:ready, logout:logout, goHome:goHome,
+        tasks:tasks, recruits:recruits, anns:anns,
+        showTask:showTask, showRec:showRec, showAnn:showAnn,
+        nt:nt, nr:nr, na:na, categories:categories, recTypes:recTypes,
+        addTask:addTask, toggleTask:toggleTask, delTask:delTask,
+        addRec:addRec, delRec:delRec, addAnn:addAnn, delAnn:delAnn
+      };
+    }
+  });
+  app.use(ElementPlus);
+  app.mount('#app');
+})();
+</script>
 </body>
 </html>
