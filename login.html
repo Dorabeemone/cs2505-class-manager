@@ -5,12 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>登录 - CS2505</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
-<script src="https://unpkg.com/element-plus"></script>
-<script src="js/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css">
+<script src="https://cdn.jsdelivr.net/npm/element-plus"></script>
 <style>
-:root { --primary:#667eea; --secondary:#764ba2; }
+:root{--p:#667eea;--s:#764ba2}
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   font-family:'PingFang SC','Microsoft YaHei',sans-serif;
@@ -41,18 +40,19 @@ body{
 .card .el-input{margin-bottom:14px}
 .card .el-input__wrapper{border-radius:12px}
 
-.btn-main{
+.btn-a{
   width:100%;height:44px;border-radius:12px;font-weight:700;font-size:.95rem;
   background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;
-  box-shadow:0 6px 20px rgba(102,126,234,.35);
+  box-shadow:0 6px 20px rgba(102,126,234,.35);cursor:pointer;
 }
-.btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(102,126,234,.5)}
+.btn-a:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(102,126,234,.5)}
 
-.btn-green{
+.btn-b{
   width:100%;height:44px;border-radius:12px;font-weight:700;font-size:.95rem;
   background:linear-gradient(135deg,#67C23A,#85CE61);border:none;color:#fff;
-  box-shadow:0 6px 20px rgba(103,194,58,.35);
+  box-shadow:0 6px 20px rgba(103,194,58,.35);cursor:pointer;
 }
+.btn-b:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(103,194,58,.5)}
 
 .err{color:#F56C6C;font-size:.82rem;margin-top:10px}
 .ok{color:#67C23A;font-size:.82rem;margin-top:10px}
@@ -66,15 +66,17 @@ body{
 <div class="bg-orb"></div><div class="bg-orb"></div>
 
 <div id="app">
+
   <!-- Already logged in -->
-  <div v-if="AuthState.user" class="card">
+  <div v-if="loggedIn" class="card">
     <div class="icon">&#x2705;</div>
     <h1>您已登录</h1>
-    <p style="color:#606266;margin:8px 0;">{{ AuthState.user.email }}</p>
-    <p style="color:#909399;font-size:.82rem;">继续前往目标页面</p>
+    <p style="color:#606266;margin:8px 0;">{{ user.email }}</p>
+    <p style="color:#909399;font-size:.82rem;">点击下方按钮前往目标页面</p>
     <a :href="goto" style="text-decoration:none;">
-      <el-button class="btn-main" size="large" style="margin-top:16px;">前往目标页面 &#8594;</el-button>
+      <button class="btn-a" style="margin-top:16px;">前往目标页面 &#8594;</button>
     </a>
+    <br>
     <a href="index.html" class="back">&#8592; 返回主页</a>
   </div>
 
@@ -82,21 +84,29 @@ body{
   <div v-else class="card">
     <div class="icon">&#x1F510;</div>
     <h1>CS2505 班级系统</h1>
-    <p class="sub">{{ tab==='login'?'登录您的账号':'创建新账号' }}</p>
+    <p class="sub">{{ tab === 'login' ? '登录您的账号' : '创建新账号' }}</p>
 
     <el-tabs v-model="tab" stretch>
+      <!-- ====== LOGIN TAB ====== -->
       <el-tab-pane label="登 录" name="login">
         <el-input v-model="loginEmail" placeholder="邮箱地址" size="large" clearable />
-        <el-input v-model="loginPwd" placeholder="密码" type="password" show-password size="large" @keyup.enter="doLogin" />
-        <el-button class="btn-main" :loading="busy" @click="doLogin">登 录</el-button>
-        <p v-if="error" class="err">{{ error }}</p>
+        <el-input v-model="loginPwd"   placeholder="密码" type="password"
+                  show-password size="large" @keyup.enter="doLogin" />
+        <button class="btn-a" :disabled="busy" @click="doLogin">
+          {{ busy ? '登录中...' : '登 录' }}
+        </button>
+        <p v-if="msg && tab==='login'" :class="msgType">{{ msg }}</p>
       </el-tab-pane>
+
+      <!-- ====== REGISTER TAB ====== -->
       <el-tab-pane label="注 册" name="register">
         <el-input v-model="regEmail" placeholder="邮箱地址" size="large" clearable />
-        <el-input v-model="regPwd" placeholder="密码（至少6位）" type="password" show-password size="large" @keyup.enter="doRegister" />
-        <el-button class="btn-green" :loading="busy" @click="doRegister">注册并登录</el-button>
-        <p v-if="error" class="err">{{ error }}</p>
-        <p v-if="done" class="ok">&#x2705; 注册成功，正在跳转...</p>
+        <el-input v-model="regPwd"   placeholder="密码（至少6位）" type="password"
+                  show-password size="large" @keyup.enter="doRegister" />
+        <button class="btn-b" :disabled="busy" @click="doRegister">
+          {{ busy ? '注册中...' : '注册并登录' }}
+        </button>
+        <p v-if="msg && tab==='register'" :class="msgType">{{ msg }}</p>
       </el-tab-pane>
     </el-tabs>
 
@@ -106,54 +116,114 @@ body{
 
 <script>
 (function(){
+  // ========== SUPABASE CLIENT ==========
+  var db = window.supabase.createClient(
+    'https://brqrrzvrgtvuqjnragfp.supabase.co',
+    'sb_publishable_G3JtNib7OmJktuVgxLCAlw_m8aQYudO'
+  );
+
+  // ========== VALIDATE REDIRECT ==========
+  var VALID = ['index.html','ddl.html','admin.html','recruit.html','announce.html'];
+  var goto = new URLSearchParams(location.search).get('redirect') || 'index.html';
+  if (VALID.indexOf(goto) === -1) goto = 'index.html';
+
+  // ========== RESTORE SESSION ==========
+  var saved = null;
+  try {
+    var raw = localStorage.getItem('currentUser');
+    if (raw) saved = JSON.parse(raw);
+    if (!saved || !saved.email) saved = null;
+  } catch(e) { saved = null; }
+
+  // ========== VUE APP ==========
   var app = Vue.createApp({
     setup: function(){
-      var validPages = ['index.html','ddl.html','admin.html','recruit.html','announce.html'];
-      var redirect = new URLSearchParams(location.search).get('redirect') || 'index.html';
-      if (validPages.indexOf(redirect) === -1) redirect = 'index.html';
-
-      var tab = Vue.ref('login');
-      var busy = Vue.ref(false);
-      var error = Vue.ref('');
+      var tab       = Vue.ref('login');
+      var busy      = Vue.ref(false);
+      var msg       = Vue.ref('');
+      var msgType   = Vue.ref('err');
       var loginEmail = Vue.ref('');
-      var loginPwd = Vue.ref('');
-      var regEmail = Vue.ref('');
-      var regPwd = Vue.ref('');
-      var done = Vue.ref(false);
+      var loginPwd   = Vue.ref('');
+      var regEmail   = Vue.ref('');
+      var regPwd     = Vue.ref('');
+      var loggedIn   = Vue.ref(!!saved);
+      var user       = Vue.ref(saved || {});
 
-      var doLogin = function(){
-        if (!loginEmail.value || !loginPwd.value){ error.value='请输入邮箱和密码'; return; }
-        busy.value = true; error.value = '';
-        AuthActions.login(loginEmail.value, loginPwd.value).then(function(){
-          location.href = redirect;
-        }).catch(function(e){
-          error.value = e.message || '登录失败';
-        }).finally(function(){ busy.value = false; });
-      };
+      function setError(m){ msg.value = m; msgType.value = 'err'; }
+      function setOk(m)  { msg.value = m; msgType.value = 'ok'; }
 
-      var doRegister = function(){
-        if (!regEmail.value || !regPwd.value){ error.value='请输入邮箱和密码'; return; }
-        if (regPwd.value.length < 6){ error.value='密码至少需要6位'; return; }
-        busy.value = true; error.value = ''; done.value = false;
-        AuthActions.register(regEmail.value, regPwd.value).then(function(){
-          done.value = true;
-          setTimeout(function(){ location.href = redirect; }, 800);
-        }).catch(function(e){
-          error.value = e.message || '注册失败';
-        }).finally(function(){ busy.value = false; });
-      };
+      // ----- LOGIN -----
+      async function doLogin(){
+        var e = loginEmail.value.trim();
+        var p = loginPwd.value.trim();
+        if (!e || !p){ setError('请输入邮箱和密码'); return; }
+
+        busy.value = true; msg.value = '';
+        try {
+          var r = await db.from('users').select('email,is_admin')
+            .eq('email', e).eq('password', p);
+          if (r.error) throw new Error('网络错误，请重试');
+          if (!r.data || r.data.length === 0) throw new Error('邮箱或密码错误');
+
+          var u = { email: r.data[0].email, is_admin: r.data[0].is_admin };
+          localStorage.setItem('currentUser', JSON.stringify(u));
+          // Also update shared state so other pages pick it up
+          if (window.AuthState) window.AuthState.user = u;
+          loggedIn.value = true;
+          user.value = u;
+          setOk('登录成功，正在跳转...');
+          setTimeout(function(){ location.href = goto; }, 600);
+        } catch(err){
+          setError(err.message || '登录失败');
+        } finally {
+          busy.value = false;
+        }
+      }
+
+      // ----- REGISTER -----
+      async function doRegister(){
+        var e = regEmail.value.trim();
+        var p = regPwd.value.trim();
+        if (!e || !p){ setError('请输入邮箱和密码'); return; }
+        if (p.length < 6){ setError('密码至少需要6位'); return; }
+
+        busy.value = true; msg.value = '';
+        try {
+          // Check existing
+          var chk = await db.from('users').select('email').eq('email', e);
+          if (chk.error) throw new Error('网络错误，请重试');
+          if (chk.data && chk.data.length > 0) throw new Error('该邮箱已注册');
+
+          // Insert
+          var ins = await db.from('users').insert([{email:e, password:p, is_admin:false}]);
+          if (ins.error) throw new Error('注册失败：' + ins.error.message);
+
+          // Auto-login
+          var u = { email: e, is_admin: false };
+          localStorage.setItem('currentUser', JSON.stringify(u));
+          if (window.AuthState) window.AuthState.user = u;
+          loggedIn.value = true;
+          user.value = u;
+          setOk('注册成功，正在跳转...');
+          setTimeout(function(){ location.href = goto; }, 800);
+        } catch(err){
+          setError(err.message || '注册失败');
+        } finally {
+          busy.value = false;
+        }
+      }
 
       return {
-        tab:tab, busy:busy, error:error,
-        loginEmail:loginEmail, loginPwd:loginPwd,
-        regEmail:regEmail, regPwd:regPwd, done:done,
-        goto:redirect, doLogin:doLogin, doRegister:doRegister,
-        AuthState: window.AuthState
+        tab, busy, msg, msgType,
+        loginEmail, loginPwd, regEmail, regPwd,
+        loggedIn, user, goto,
+        doLogin, doRegister
       };
     }
   });
   app.use(ElementPlus);
   app.mount('#app');
+  console.log('[login] App mounted OK');
 })();
 </script>
 </body>
